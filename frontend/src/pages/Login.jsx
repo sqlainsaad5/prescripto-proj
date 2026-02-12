@@ -1,4 +1,4 @@
-import React, { useState ,useContext, useEffect} from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -46,14 +46,14 @@ const Login = () => {
     }
   };
 
-  useEffect(()=>{
+  useEffect(() => {
 
-    if (token){
+    if (token) {
       navigate('/')
 
     }
 
-  },[token])
+  }, [token])
 
   return (
     <form onSubmit={onSubmitHandler} className="min-h-[80vh] flex items-center">

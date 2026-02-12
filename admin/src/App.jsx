@@ -15,6 +15,7 @@ import { DoctorContext } from "./context/DoctorContext";
 import DoctorProfile from "./pages/Doctor/DoctorProfile";
 
 
+
 const App = () => {
   const { aToken } = useContext(AdminContext);
   const { dtoken } = useContext(DoctorContext);
