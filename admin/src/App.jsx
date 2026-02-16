@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import Login from "./pages/Login";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { AdminContext } from "./context/AdminContext";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
@@ -21,7 +21,6 @@ const App = () => {
   const { dtoken } = useContext(DoctorContext);
   return aToken || dtoken ? (
     <div className='bg-[#F8F9FD]'>
-      <ToastContainer />
       <Navbar />
       <div className='flex items-start'>
         <Sidebar />
@@ -45,7 +44,6 @@ const App = () => {
     <>
 
       <Login />
-      <ToastContainer />
     </>
   );
 };
