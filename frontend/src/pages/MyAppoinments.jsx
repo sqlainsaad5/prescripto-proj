@@ -86,7 +86,7 @@ const MyAppoinments = () => {
           try {
             const { data } = await axios.post(backendUrl + '/api/user/verifyStripe', { appointmentId, success, session_id }, { headers: { token } }) // Send session_id
             if (data.success) {
-              getUserAppointments()
+              await getUserAppointments()
               navigate('/my-appointments')
               toast.success(data.message)
             } else {
