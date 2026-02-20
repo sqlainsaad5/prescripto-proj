@@ -1,22 +1,23 @@
-import React, { useContext } from "react";
+import React from "react";
 import { assets } from "../assets/assets";
-import { AdminContext } from "../context/AdminContext";
-import { DoctorContext } from "../context/DoctorContext";
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logoutAdmin } from '../store/slices/adminSlice';
+import { logoutDoctor } from '../store/slices/doctorSlice';
 
 const Navbar = () => {
-  const { aToken, setAToken } = useContext(AdminContext);
-  const { dtoken, setDToken } = useContext(DoctorContext)
+  const { aToken } = useSelector((state) => state.admin);
+  const { dToken } = useSelector((state) => state.doctor);
+  const dispatch = useDispatch();
 
   const navigate = useNavigate();
 
   const logout = () => {
     navigate('/');
-    aToken && setAToken('');
-    aToken && localStorage.removeItem('aToken');
-    dtoken && setDToken('');
-    dtoken && localStorage.removeItem('dtoken');
+    if (aToken) dispatch(logoutAdmin());
+    if (dToken) dispatch(logoutDoctor());
   };
+
   return (
     <div className="flex justify-between items-center px-4 sm:px-10 py-3 border-b bg-white border-gray-200">
       <div className="flex items-center gap-2 text-xs">

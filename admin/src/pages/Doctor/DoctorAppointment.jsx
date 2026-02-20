@@ -1,16 +1,19 @@
-import React, { useContext, useEffect } from 'react'
-import { DoctorContext } from '../../context/DoctorContext'
-import { AppContext } from '../../context/AppContext'
+import React, { useEffect } from 'react'
 import { assets } from '../../assets/assets'
+import { useSelector, useDispatch } from 'react-redux'
+import { getDoctorAppointments, completeAppointment, cancelDoctorAppointment } from '../../store/slices/doctorSlice'
+import { calculateAge, slotDateFormat } from '../../utils/helpers'
 
 const DoctorAppointments = () => {
-    const { appointments, dtoken, getAppointments, completeAppointment, cancelAppointment } = useContext(DoctorContext)
-    const { calculateAge, slotDateFormat, currency } = useContext(AppContext)
+    const { appointments, dToken } = useSelector((state) => state.doctor)
+    const { currency } = useSelector((state) => state.app)
+    const dispatch = useDispatch()
+
     useEffect(() => {
-        if (dtoken) {
-            getAppointments()
+        if (dToken) {
+            dispatch(getDoctorAppointments())
         }
-    }, [dtoken])
+    }, [dToken, dispatch])
     return (
         <div className='w-full max-w-6xl m-5'>
             <p className='mb-3 text-lg font-medium'> All Appointments</p>
@@ -46,8 +49,8 @@ const DoctorAppointments = () => {
                                     : item.isCompleted
                                         ? <p className='text-green-500 text-xs font-medium'>Completed</p>
                                         : <div className='flex'>
-                                            <img onClick={() => cancelAppointment(item._id)} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
-                                            <img onClick={() => completeAppointment(item._id)} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
+                                            <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
+                                            <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
 
                                         </div>
                             }

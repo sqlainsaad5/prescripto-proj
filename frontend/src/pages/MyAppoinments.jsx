@@ -1,51 +1,41 @@
-import React, { useContext, useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AppContext } from '../context/AppContext'
+import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import { toast } from 'react-toastify';
-
-
-
-
+import { slotDateFormat } from '../utils/helpers'
+import { getDoctorsData } from '../store/slices/doctorSlice'
 
 const MyAppoinments = () => {
+  const { token } = useSelector((state) => state.user)
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
 
-  const { backendUrl, token, getDoctorsData } = useContext(AppContext)
   const [appointments, setAppointments] = useState([])
 
-
-  const months = [" ", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  const slotDateFormat = (slotDate) => {
-    const dateArray = slotDate.split('_')
-    return dateArray[0] + " " + months[Number(dateArray[1])] + " " + dateArray[2]
-  }
-  const navigate = useNavigate()
   const getUserAppointments = async () => {
     try {
       const { data } = await axios.get(backendUrl + '/api/user/appointments', { headers: { token } })
       if (data.success) {
         setAppointments(data.appointments.reverse())
-        console.log(data.appointments)
       }
-
-
     } catch (error) {
       console.log(error);
       toast.error(error.message)
-
     }
   }
+
   const cancelAppointment = async (appointmentId) => {
     try {
       const { data } = await axios.post(backendUrl + '/api/user/cancel-appointment', { appointmentId }, { headers: { token } })
       if (data.success) {
         toast.success(data.message)
         getUserAppointments()
-        getDoctorsData()
+        dispatch(getDoctorsData())
       } else {
         toast.error(data.message)
       }
-
     } catch (error) {
       console.log(error)
       toast.error(error.message)
@@ -71,7 +61,6 @@ const MyAppoinments = () => {
     if (token) {
       getUserAppointments()
     }
-
   }, [token])
 
   useEffect(() => {
@@ -80,11 +69,11 @@ const MyAppoinments = () => {
       if (query.get('success') && query.get('appointmentId')) {
         const appointmentId = query.get('appointmentId')
         const success = query.get('success')
-        const session_id = query.get('session_id') // Extract session_id
+        const session_id = query.get('session_id')
 
         const verifyPayment = async () => {
           try {
-            const { data } = await axios.post(backendUrl + '/api/user/verifyStripe', { appointmentId, success, session_id }, { headers: { token } }) // Send session_id
+            const { data } = await axios.post(backendUrl + '/api/user/verifyStripe', { appointmentId, success, session_id }, { headers: { token } })
             if (data.success) {
               await getUserAppointments()
               navigate('/my-appointments')
@@ -100,7 +89,8 @@ const MyAppoinments = () => {
         verifyPayment()
       }
     }
-  }, [token])
+  }, [token, navigate, backendUrl])
+
   return (
     <div>
       <p className='pb-3 mt-12 font-medium text-zinc-700 border-b border-gray-200'>My appointments</p>
@@ -116,9 +106,8 @@ const MyAppoinments = () => {
               <p className='text-zinc-700 font-medium mt-1'>Address</p>
               <p className='text-xs'>{item.docData.address.line1}</p>
               <p className='text-xs'>{item.docData.address.line2}</p>
-              <p className='text-xs mt-1'><span className='text-sm text-neutral-700 font-medium'>Date & Time:</span>{slotDateFormat(item.slotDate)} | {item.slotTime}</p>
+              <p className='text-xs mt-1'><span className='text-sm text-neutral-700 font-medium'>Date & Time:</span> {slotDateFormat(item.slotDate)} | {item.slotTime}</p>
             </div>
-            <div></div>
             <div className='flex flex-col gap-2 justify-end' >
               {!item.cancelled && !item.payment && !item.isCompleted && <button onClick={() => appointmentStripe(item._id)} className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300'>Pay Online </button>}
               {!item.cancelled && item.payment && !item.isCompleted && <button className='text-sm text-stone-500 text-center sm:min-w-48 py-2 border rounded bg-indigo-50 text-indigo-500'>Paid</button>}
@@ -127,12 +116,7 @@ const MyAppoinments = () => {
               {item.isCompleted && <button className='sm:min-w-48 py-2 border border-green-500 rounded text-green-500' >Completed</button>}
             </div>
           </div>
-
-
-        ))
-
-        }
-
+        ))}
       </div>
     </div>
   )

@@ -1,18 +1,19 @@
-import React from 'react'
-import { useContext } from 'react'
-import { AdminContext } from '../../context/AdminContext'
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { assets } from '../../assets/assets'
-import { AppContext } from '../../context/AppContext'
+import { useSelector, useDispatch } from 'react-redux'
+import { getDashData, cancelAppointment } from '../../store/slices/adminSlice'
+import { slotDateFormat } from '../../utils/helpers'
 
 const Dashboard = () => {
-  const { aToken, getDashData, cancelAppointment, dashData } = useContext(AdminContext)
-  const { slotDateFormat } = useContext(AppContext)
+  const { aToken, dashData } = useSelector((state) => state.admin)
+  const dispatch = useDispatch()
+
   useEffect(() => {
     if (aToken) {
-      getDashData()
+      dispatch(getDashData())
     }
-  }, [aToken])
+  }, [aToken, dispatch])
+
   return dashData && (
     <div className='m-5'>
       <div className='flex flex-wrap gap-3'>
@@ -57,7 +58,7 @@ const Dashboard = () => {
                 {
                   item.cancelled
                     ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
-                    : <img onClick={() => cancelAppointment(item._id)} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
+                    : <img onClick={() => dispatch(cancelAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
                 }
               </div>
             ))

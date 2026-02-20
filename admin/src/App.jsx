@@ -1,7 +1,5 @@
-import React, { useContext } from "react";
+import React from "react";
 import Login from "./pages/Login";
-import { toast } from "react-toastify";
-import { AdminContext } from "./context/AdminContext";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import { Route, Routes } from "react-router-dom";
@@ -11,15 +9,14 @@ import AddDoctor from "./pages/Admin/AddDoctor";
 import DoctorsList from "./pages/Admin/DoctorsList";
 import DoctorDashboard from "./pages/Doctor/DoctorDashboard";
 import DoctorAppointments from "./pages/Doctor/DoctorAppointment";
-import { DoctorContext } from "./context/DoctorContext";
 import DoctorProfile from "./pages/Doctor/DoctorProfile";
-
-
+import { useSelector } from 'react-redux';
 
 const App = () => {
-  const { aToken } = useContext(AdminContext);
-  const { dtoken } = useContext(DoctorContext);
-  return aToken || dtoken ? (
+  const { aToken } = useSelector((state) => state.admin);
+  const { dToken } = useSelector((state) => state.doctor);
+
+  return aToken || dToken ? (
     <div className='bg-[#F8F9FD]'>
       <Navbar />
       <div className='flex items-start'>
@@ -35,14 +32,11 @@ const App = () => {
           <Route path='/doctor-dashboard' element={<DoctorDashboard />} />
           <Route path='/doctor-appointment' element={<DoctorAppointments />} />
           <Route path='/doctor-profile' element={<DoctorProfile />} />
-
-
         </Routes>
       </div>
     </div>
   ) : (
     <>
-
       <Login />
     </>
   );

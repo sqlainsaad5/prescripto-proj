@@ -1,17 +1,20 @@
-import React, { useContext, useEffect } from 'react'
-import { AdminContext } from '../../context/AdminContext'
-import { AppContext } from '../../context/AppContext'
+import React, { useEffect } from 'react'
 import { assets } from '../../assets/assets'
-
+import { useSelector, useDispatch } from 'react-redux'
+import { getAllAppointments, cancelAppointment } from '../../store/slices/adminSlice'
+import { calculateAge, slotDateFormat } from '../../utils/helpers'
 
 const AllApointment = () => {
-  const { aToken, appointments, getAllAppointments, cancelAppointment } = useContext(AdminContext)
-  const { calculateAge, slotDateFormat, currency } = useContext(AppContext)
+  const { aToken, appointments } = useSelector((state) => state.admin)
+  const { currency } = useSelector((state) => state.app)
+  const dispatch = useDispatch()
+
   useEffect(() => {
     if (aToken) {
-      getAllAppointments()
+      dispatch(getAllAppointments())
     }
-  }, [aToken])
+  }, [aToken, dispatch])
+
   return (
     <div className='w-full max-w-6xl m-5'>
       <p className='mb-3 text-lg font-medium'>All Appointmenst</p>
@@ -47,10 +50,8 @@ const AllApointment = () => {
             {
               item.cancelled
                 ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
-                : <img onClick={() => cancelAppointment(item._id)} className='w-18 cursor-pointer' src={assets.cancel_icon} alt="" />
+                : <img onClick={() => dispatch(cancelAppointment(item._id))} className='w-18 cursor-pointer' src={assets.cancel_icon} alt="" />
             }
-
-
 
           </div>
 

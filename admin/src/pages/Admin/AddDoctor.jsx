@@ -1,9 +1,8 @@
-import React, { useContext } from "react";
+import React, { useState } from "react";
 import { assets } from "../../assets/assets";
-import { useState } from "react";
-import { AdminContext } from "../../context/AdminContext";
 import { toast } from "react-toastify";
-import axios from "axios";
+import { useDispatch } from "react-redux";
+import { addDoctor } from "../../store/slices/adminSlice";
 
 const AddDoctor = () => {
   const [docImg, setDocImg] = useState(false);
@@ -18,11 +17,10 @@ const AddDoctor = () => {
   const [address1, setAddress1] = useState("");
   const [address2, setAddress2] = useState("");
 
-  const { backendUrl, aToken } = useContext(AdminContext);
+  const dispatch = useDispatch();
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
-    console.log("Frontend ATOKEN:", aToken);
 
     try {
       if (!docImg) {
@@ -43,24 +41,9 @@ const AddDoctor = () => {
         JSON.stringify({ line1: address1, line2: address2 }),
       );
 
-      //console log formdata
-      formData.forEach((value, key) => {
-        console.log(`${key}:${value}`);
-      });
-      console.log("Sending token:", aToken);
-      console.log("ATOKEN:", aToken);
+      const resultAction = await dispatch(addDoctor(formData));
 
-      const { data } = await axios.post(
-        backendUrl + "/api/admin/add-doctor",
-        formData,
-        {
-          headers: { 
-            aToken: aToken,
-          },
-        },
-      );
-      if (data.success) {
-        toast.success(data.message);
+      if (addDoctor.fulfilled.match(resultAction)) {
         setDocImg(false)
         setName('')
         setPassword('')
@@ -70,11 +53,9 @@ const AddDoctor = () => {
         setDegree('')
         setAbout('')
         setfee('')
-      } else {
-        toast.error(data.message);
       }
     } catch (error) {
-      toast.error(error)
+      toast.error(error.message)
       console.log(error)
     }
   };

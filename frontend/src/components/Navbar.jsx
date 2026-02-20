@@ -1,18 +1,20 @@
-import React, { useContext, useState } from "react";
+import React, { useState } from "react";
 import { assets } from "../assets/assets";
 import { useNavigate, NavLink } from "react-router-dom";
-import { AppContext } from "../context/AppContext";
+import { useSelector, useDispatch } from "react-redux";
+import { logout } from "../store/slices/userSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { token, setToken, userData } = useContext(AppContext)
+  const { token, userData } = useSelector((state) => state.user)
 
   const [showMenu, setShowMenu] = useState(false);
 
-  const logout = () => {
-    setToken(false)
-    localStorage.removeItem('token')
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate('/login');
   }
 
 
@@ -65,7 +67,7 @@ const Navbar = () => {
                       My Appointment
                     </p>
                     <p
-                      onClick={logout}
+                      onClick={handleLogout}
                       className="hover:text-black cursor-pointer"
                     >
                       Logout

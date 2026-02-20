@@ -1,59 +1,32 @@
-import React, { useState, useContext, useEffect } from "react";
-import { AppContext } from "../context/AppContext";
-import axios from "axios";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { loginUser, registerUser } from "../store/slices/userSlice";
 
 const Login = () => {
-  const { backendUrl, token, setToken } = useContext(AppContext);
+  const { token } = useSelector((state) => state.user);
+  const dispatch = useDispatch();
   const navigate = useNavigate()
   const [state, setState] = useState("sign up");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  console.log(name);
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
-    try {
-      if (state === "Sign Up") {
-        const { data } = await axios.post(backendUrl + "/api/user/register", {
-          name,
-          password,
-          email,
-        });
-        if (data.success) {
-          localStorage.setItem("token", data.token);
-          setToken(data.token);
-        } else {
-          toast.error(data.message);
-        }
-      } else {
-        const { data } = await axios.post(backendUrl + "/api/user/login", {
-          password,
-          email,
-        });
-        if (data.success) {
-          localStorage.setItem("token", data.token);
-          setToken(data.token);
-        } else {
-          toast.error(data.message);
-        }
-      }
-    } catch (error) {
-      toast.error(error.message);
+    if (state === "sign up") {
+      dispatch(registerUser({ name, email, password }));
+    } else {
+      dispatch(loginUser({ email, password }));
     }
   };
 
   useEffect(() => {
-
     if (token) {
       navigate('/')
-
     }
-
-  }, [token])
+  }, [token, navigate])
 
   return (
     <form onSubmit={onSubmitHandler} className="min-h-[80vh] flex items-center">
@@ -103,7 +76,7 @@ const Login = () => {
             Already have an account?{" "}
             <span
               onClick={() => setState("Log in")}
-              className="text-primary underline cursor-pointer onClick={()=>setState('')}"
+              className="text-primary underline cursor-pointer"
             >
               {" "}
               Login here
@@ -114,7 +87,7 @@ const Login = () => {
             Create an new account?
             <span
               onClick={() => setState("sign up")}
-              className="text-primary underline cursor-pointer onClick={()=>setState('')}"
+              className="text-primary underline cursor-pointer"
             >
               {" "}
               Click here
