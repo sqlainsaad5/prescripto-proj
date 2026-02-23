@@ -54,6 +54,22 @@ export const loadUserProfileData = createAsyncThunk('user/loadProfile', async (_
     }
 });
 
+export const contactUs = createAsyncThunk('user/contactUs', async (formData, { rejectWithValue }) => {
+    try {
+        const { data } = await axios.post(backendUrl + "/api/user/contact-us", formData);
+        if (data.success) {
+            toast.success(data.message);
+            return data.message;
+        } else {
+            toast.error(data.message);
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        toast.error(error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
 const userSlice = createSlice({
     name: 'user',
     initialState: {
