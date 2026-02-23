@@ -6,6 +6,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
 import appointmentModel from '../models/appointmentModel.js';
 import Stripe from 'stripe'
+import nodemailer from 'nodemailer'
 
 
 const registerUser = async (req, res) => {
@@ -291,4 +292,41 @@ const verifyStripe = async (req, res) => {
 }
 //API to verify payment from stripe
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe }
+// API to send contact form message
+const contactUs = async (req, res) => {
+    try {
+        const { name, email, subject, message } = req.body
+        console.log("Contact Request Received:", { name, email, subject });
+
+        if (!name || !email || !subject || !message) {
+            return res.json({ success: false, message: "Details Missing" })
+        }
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        })
+
+        const mailOptions = {
+            from: email,
+            to: 'saadamjad558@gmail.com',
+            subject: `Contact Form: ${subject}`,
+            text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
+        }
+
+        console.log("Attempting to send email...");
+        await transporter.sendMail(mailOptions)
+        console.log("Email sent successfully");
+
+        res.json({ success: true, message: "Message Sent Successfully" })
+
+    } catch (error) {
+        console.log("Nodemailer Error:", error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs }
