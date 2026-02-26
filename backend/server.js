@@ -12,25 +12,30 @@ import userRouter from './routes/userRoute.js'
 
 // app config
 const app = express()
-const port =process.env.PORT || 4000
-connectDB()
-connectCloudinary()
-
+const port = process.env.PORT || 4000
 
 //middleware
 app.use(express.json())
 app.use(cors())
 
 //api endpoints
-app.use('/api/admin',adminRouter)
-app.use('/api/doctor',doctorRouter)
-app.use('/api/user',userRouter)
+app.use('/api/admin', adminRouter)
+app.use('/api/doctor', doctorRouter)
+app.use('/api/user', userRouter)
 
-
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
     res.send('API WORKING')
-
 })
 
-app.listen(port,()=> console.log("Server Starrted",port))// Server updated
-// Server reset
+const startServer = async () => {
+    try {
+        await connectDB()
+        connectCloudinary()
+        app.listen(port, () => console.log("Server Starrted", port))
+    } catch (error) {
+        console.error('Failed to start server:', error)
+        process.exit(1)
+    }
+}
+
+startServer()
