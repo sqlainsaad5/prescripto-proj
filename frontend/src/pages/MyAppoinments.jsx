@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import { toast } from 'react-toastify';
@@ -93,7 +93,10 @@ const MyAppoinments = () => {
 
   return (
     <div>
-      <p className='pb-3 mt-12 font-medium text-zinc-700 border-b border-gray-200'>My appointments</p>
+      <div className='flex flex-wrap items-center gap-4 pb-3 mt-12 border-b border-gray-200'>
+        <p className='font-medium text-zinc-700'>My appointments</p>
+        <Link to='/my-prescriptions' className='text-sm text-primary hover:underline'>View your prescriptions</Link>
+      </div>
       <div>
         {appointments.map((item, index) => (
           <div className='grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-2 border-b border-gray-200' key={index}>

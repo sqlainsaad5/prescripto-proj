@@ -67,6 +67,12 @@ const Navbar = () => {
                       My Appointment
                     </p>
                     <p
+                      onClick={() => navigate("my-prescriptions")}
+                      className="hover:text-black cursor-pointer"
+                    >
+                      My Prescriptions
+                    </p>
+                    <p
                       onClick={handleLogout}
                       className="hover:text-black cursor-pointer"
                     >

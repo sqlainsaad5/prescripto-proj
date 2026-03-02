@@ -70,11 +70,31 @@ export const contactUs = createAsyncThunk('user/contactUs', async (formData, { r
     }
 });
 
+export const getMyPrescriptions = createAsyncThunk('user/getMyPrescriptions', async (_, { getState, rejectWithValue }) => {
+    try {
+        const { token, userData } = getState().user;
+        if (!token || !userData?._id) {
+            return rejectWithValue('Not logged in');
+        }
+        const { data } = await axios.get(backendUrl + '/api/prescription/patient/' + userData._id, { headers: { token } });
+        if (data.success) {
+            return data.prescriptions;
+        } else {
+            toast.error(data.message);
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        toast.error(error?.response?.data?.message || error.message);
+        return rejectWithValue(error?.response?.data?.message || error.message);
+    }
+});
+
 const userSlice = createSlice({
     name: 'user',
     initialState: {
         token: localStorage.getItem('token') || false,
         userData: false,
+        prescriptions: [],
     },
     reducers: {
         setToken: (state, action) => {
@@ -91,13 +111,18 @@ const userSlice = createSlice({
         logout: (state) => {
             state.token = false;
             state.userData = false;
+            state.prescriptions = [];
             localStorage.removeItem('token');
         }
     },
     extraReducers: (builder) => {
-        builder.addCase(loadUserProfileData.fulfilled, (state, action) => {
-            state.userData = action.payload;
-        });
+        builder
+            .addCase(loadUserProfileData.fulfilled, (state, action) => {
+                state.userData = action.payload;
+            })
+            .addCase(getMyPrescriptions.fulfilled, (state, action) => {
+                state.prescriptions = action.payload || [];
+            });
     }
 });
 

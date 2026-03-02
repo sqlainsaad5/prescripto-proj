@@ -1,13 +1,16 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { assets } from '../../assets/assets'
 import { useSelector, useDispatch } from 'react-redux'
 import { getDoctorAppointments, completeAppointment, cancelDoctorAppointment } from '../../store/slices/doctorSlice'
 import { calculateAge, slotDateFormat } from '../../utils/helpers'
+import PrescriptionForm from '../../components/PrescriptionForm'
 
 const DoctorAppointments = () => {
     const { appointments, dToken } = useSelector((state) => state.doctor)
     const { currency } = useSelector((state) => state.app)
     const dispatch = useDispatch()
+    const [selectedAppointment, setSelectedAppointment] = useState(null)
+    const [showPrescriptionForm, setShowPrescriptionForm] = useState(false)
 
     useEffect(() => {
         if (dToken) {
@@ -47,7 +50,16 @@ const DoctorAppointments = () => {
                                 item.cancelled
                                     ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
                                     : item.isCompleted
-                                        ? <p className='text-green-500 text-xs font-medium'>Completed</p>
+                                        ? <div className='flex flex-col gap-1 items-start'>
+                                            <p className='text-green-500 text-xs font-medium'>Completed</p>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setSelectedAppointment(item); setShowPrescriptionForm(true); }}
+                                                className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
+                                            >
+                                                Generate Prescription
+                                            </button>
+                                          </div>
                                         : <div className='flex'>
                                             <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
                                             <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
@@ -63,6 +75,15 @@ const DoctorAppointments = () => {
                     ))
                 }
             </div>
+            {showPrescriptionForm && selectedAppointment && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <PrescriptionForm
+                        appointment={selectedAppointment}
+                        onCancel={() => { setShowPrescriptionForm(false); setSelectedAppointment(null); }}
+                        onSubmitSuccess={() => { setShowPrescriptionForm(false); setSelectedAppointment(null); dispatch(getDoctorAppointments()); }}
+                    />
+                </div>
+            )}
         </div>
     )
 }
