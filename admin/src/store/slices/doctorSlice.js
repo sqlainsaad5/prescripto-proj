@@ -123,6 +123,38 @@ export const updateDoctorProfile = createAsyncThunk('doctor/updateProfile', asyn
     }
 });
 
+export const createPrescription = createAsyncThunk('doctor/createPrescription', async ({ appointmentId, medicines }, { getState, dispatch, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.post(backendUrl + '/api/prescription/create', { appointmentId, medicines }, { headers: { dToken } });
+        if (data.success) {
+            toast.success(data.message);
+            dispatch(getDoctorAppointments());
+            return data.prescription;
+        } else {
+            toast.error(data.message);
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        toast.error(error.message);
+        return rejectWithValue(error.message);
+    }
+});
+
+export const getPrescriptionByAppointment = createAsyncThunk('doctor/getPrescriptionByAppointment', async (appointmentId, { getState, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.get(backendUrl + '/api/prescription/' + appointmentId, { headers: { dToken } });
+        if (data.success) {
+            return data.prescription;
+        } else {
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        toast.error(error?.response?.data?.message || error.message);
+        return rejectWithValue(error?.response?.data?.message || error.message);
+    }
+});
 
 const doctorSlice = createSlice({
     name: 'doctor',
