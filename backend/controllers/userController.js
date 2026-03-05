@@ -136,13 +136,14 @@ const bookAppointment = async (req, res) => {
 
         //checking for slot avaibility
         const alreadyBooked = await appointmentModel.findOne({
-            userId,
+            docId,
             slotDate,
-            slotTime
+            slotTime,
+            cancelled: false
         })
 
         if (alreadyBooked) {
-            return res.json({ success: false, message: 'slot not available' })
+            return res.json({ success: false, message: 'Slot already booked' })
         }
 
         if (slots_booked[slotDate]) {
@@ -180,6 +181,10 @@ const bookAppointment = async (req, res) => {
 
     } catch (error) {
         console.log(error)
+        if (error.code === 11000) {
+            // Duplicate key error from unique index on (docId, slotDate, slotTime)
+            return res.json({ success: false, message: 'Slot already booked' })
+        }
         res.json({ success: false, message: error.message })
 
     }

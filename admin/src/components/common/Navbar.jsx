@@ -1,9 +1,9 @@
 import React from "react";
-import { assets } from "../assets/assets";
+import { assets } from "../../assets/assets";
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutAdmin } from '../store/slices/adminSlice';
-import { logoutDoctor } from '../store/slices/doctorSlice';
+import { logoutAdmin } from '../../store/slices/adminSlice';
+import { logoutDoctor } from '../../store/slices/doctorSlice';
 
 const Navbar = () => {
   const { aToken } = useSelector((state) => state.admin);
@@ -41,3 +41,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
