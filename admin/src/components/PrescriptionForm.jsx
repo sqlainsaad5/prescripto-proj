@@ -8,6 +8,7 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
     const [medicines, setMedicines] = useState([
         { medicineName: '', dosage: '', duration: '', instructions: '' }
     ]);
+    const [notes, setNotes] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
     const addMedicine = () => {
@@ -35,7 +36,8 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
         setSubmitting(true);
         const resultAction = await dispatch(createPrescription({
             appointmentId: appointment._id,
-            medicines: valid
+            medicines: valid,
+            notes: notes?.trim() || ''
         }));
         setSubmitting(false);
         if (createPrescription.fulfilled.match(resultAction)) {
@@ -51,6 +53,16 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
                 Prescription for {appointment.userData?.name || 'Patient'}
             </p>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1">
+                    <p className="text-gray-600 text-sm">Diagnosis / Consultation notes (optional)</p>
+                    <textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        className="border border-gray-300 rounded px-3 py-2 text-gray-700"
+                        rows={2}
+                        placeholder="Brief diagnosis or notes for this consultation"
+                    />
+                </div>
                 {medicines.map((med, index) => (
                     <div key={index} className="border border-gray-200 rounded p-4 space-y-3">
                         <div className="flex justify-between items-center">

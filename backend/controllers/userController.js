@@ -4,7 +4,8 @@ import jwt from 'jsonwebtoken'
 import userModel from '../models/userModel.js'
 import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
-import appointmentModel from '../models/appointmentModel.js';
+import appointmentModel from '../models/appointmentModel.js'
+import labReportModel from '../models/labReportModel.js'
 import Stripe from 'stripe'
 import { sendContactEmail } from '../services/emailService.js'
 
@@ -103,7 +104,9 @@ const updateProfile = async (req, res) => {
         if (!name || !phone || !dob || !gender) {
             return res.json({ success: false, message: "Data Missing" })
         }
-        await userModel.findByIdAndUpdate(userId, { name, phone, address: JSON.parse(address), dob, gender })
+        // Profile updates from patients must not change health fields (allergies, chronicConditions, healthHistory); doctor-only via admin.
+        const updateData = { name, phone, address: typeof address === 'string' ? JSON.parse(address) : address, dob, gender }
+        await userModel.findByIdAndUpdate(userId, updateData)
         if (imageFile) {
             //upload image cloudinary
             const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' })
@@ -317,4 +320,45 @@ const contactUs = async (req, res) => {
     }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs }
+// Upload lab report (X-ray, blood test, diagnostic) linked to an appointment
+const uploadLabReport = async (req, res) => {
+    try {
+        const userId = req.userId
+        const { appointmentId, type } = req.body
+        const file = req.file
+
+        const validTypes = ['xray', 'blood_test', 'diagnostic']
+        if (!appointmentId || !type || !validTypes.includes(type)) {
+            return res.status(400).json({ success: false, message: "Missing or invalid appointmentId or type (xray, blood_test, diagnostic)" })
+        }
+        if (!file || !file.path) {
+            return res.status(400).json({ success: false, message: "No file uploaded" })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: "Appointment not found" })
+        }
+        if (String(appointment.userId) !== String(userId)) {
+            return res.status(403).json({ success: false, message: "Not authorized to upload for this appointment" })
+        }
+
+        const uploadResult = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
+        const fileUrl = uploadResult.secure_url
+
+        const labReport = await labReportModel.create({
+            appointmentId,
+            patientId: appointment.userId,
+            type,
+            fileUrl,
+            fileName: file.originalname || ''
+        })
+
+        return res.json({ success: true, labReport })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport }

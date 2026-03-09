@@ -7,7 +7,7 @@ import { generatePrescriptionPdf } from "../services/prescriptionPdfService.js";
 // Doctor: create a new prescription for an appointment
 const createPrescription = async (req, res) => {
     try {
-        const { docId, appointmentId, medicines } = req.body;
+        const { docId, appointmentId, medicines, notes } = req.body;
 
         if (!appointmentId || !Array.isArray(medicines) || medicines.length === 0) {
             return res.json({ success: false, message: "Missing appointment or medicines data" });
@@ -33,7 +33,8 @@ const createPrescription = async (req, res) => {
             appointmentId,
             patientId: appointment.userId,
             doctorId: appointment.docId,
-            medicines
+            medicines,
+            notes: notes || ""
         });
 
         try {

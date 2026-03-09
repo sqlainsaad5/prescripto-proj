@@ -22,7 +22,12 @@ const MyProfile = () => {
 
   useEffect(() => {
     if (userData) {
-      setEditData(userData)
+      setEditData({
+        ...userData,
+        allergies: Array.isArray(userData.allergies) ? userData.allergies : [],
+        chronicConditions: Array.isArray(userData.chronicConditions) ? userData.chronicConditions : [],
+        healthHistory: Array.isArray(userData.healthHistory) ? userData.healthHistory : [],
+      })
     }
   }, [userData])
 
@@ -322,6 +327,37 @@ const MyProfile = () => {
                       {userData.dob || 'Not specified'}
                     </p>
                   )}
+                </div>
+              </div>
+            </div>
+
+            {/* Health information (EHR) */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md p-5 sm:p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
+              <p className="text-xs font-semibold tracking-wide text-[#6B7280] dark:text-gray-400 mb-4">
+                HEALTH INFORMATION
+              </p>
+              <p className="text-[13px] text-[#6B7280] dark:text-gray-400 mb-3">
+                This information is shared with your doctors to support informed care.
+              </p>
+              <p className="text-[13px] text-[#6B7280] dark:text-gray-400 mb-3">
+                Only your doctor can update this information.
+              </p>
+              <div className="space-y-4 text-sm text-[#1F2937] dark:text-gray-100">
+                <div className="space-y-1.5">
+                  <p className="text-[13px] font-medium text-[#6B7280] dark:text-gray-400">
+                    Allergies
+                  </p>
+                  <p className="text-sm text-[#6B7280] dark:text-gray-300">
+                    {(userData.allergies && userData.allergies.length) ? userData.allergies.join(', ') : 'None specified'}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[13px] font-medium text-[#6B7280] dark:text-gray-400">
+                    Chronic conditions
+                  </p>
+                  <p className="text-sm text-[#6B7280] dark:text-gray-300">
+                    {(userData.chronicConditions && userData.chronicConditions.length) ? userData.chronicConditions.join(', ') : 'None specified'}
+                  </p>
                 </div>
               </div>
             </div>

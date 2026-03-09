@@ -260,6 +260,7 @@ export const updateUserProfile = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
+            // Patient cannot update allergies/chronicConditions/healthHistory; only doctor can via admin.
             const formData = new FormData();
             formData.append('name', editData.name);
             formData.append('phone', editData.phone);
@@ -287,6 +288,42 @@ export const updateUserProfile = createAsyncThunk(
         } catch (error) {
             toast.error(error.message);
             return rejectWithValue(error.message);
+        }
+    }
+);
+
+// Upload lab report (X-ray, blood test, diagnostic) for an appointment
+export const uploadLabReport = createAsyncThunk(
+    'user/uploadLabReport',
+    async ({ appointmentId, type, file }, { getState, dispatch, rejectWithValue }) => {
+        try {
+            const { token } = getState().user;
+            if (!token) {
+                return rejectWithValue('Not authenticated');
+            }
+            const formData = new FormData();
+            formData.append('appointmentId', appointmentId);
+            formData.append('type', type);
+            formData.append('file', file);
+
+            const { data } = await axios.post(
+                backendUrl + '/api/user/upload-lab-report',
+                formData,
+                { headers: { token } }
+            );
+
+            if (data.success) {
+                toast.success('Lab report uploaded successfully');
+                dispatch(fetchUserAppointments());
+                return data.labReport;
+            } else {
+                toast.error(data.message || 'Upload failed');
+                return rejectWithValue(data.message);
+            }
+        } catch (error) {
+            const message = error?.response?.data?.message || error.message;
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { getDoctorAppointments, completeAppointment, cancelDoctorAppointment } from '../../store/slices/doctorSlice'
 import { calculateAge, slotDateFormat } from '../../utils/helpers'
 import PrescriptionForm from '../../components/PrescriptionForm'
+import PatientHistoryModal from '../../components/PatientHistoryModal'
 
 const DoctorAppointments = () => {
     const { appointments, dToken } = useSelector((state) => state.doctor)
@@ -11,6 +12,7 @@ const DoctorAppointments = () => {
     const dispatch = useDispatch()
     const [selectedAppointment, setSelectedAppointment] = useState(null)
     const [showPrescriptionForm, setShowPrescriptionForm] = useState(false)
+    const [selectedPatient, setSelectedPatient] = useState(null)
 
     useEffect(() => {
         if (dToken) {
@@ -48,7 +50,16 @@ const DoctorAppointments = () => {
                             <p>{currency}{item.amount}</p>
                             {
                                 item.cancelled
-                                    ? <p className='text-red-400 text-xs font-medium'>Cancelled</p>
+                                    ? <div className='flex flex-col gap-1 items-start'>
+                                        <p className='text-red-400 text-xs font-medium'>Cancelled</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                                            className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
+                                        >
+                                            View History
+                                        </button>
+                                      </div>
                                     : item.isCompleted
                                         ? <div className='flex flex-col gap-1 items-start'>
                                             <p className='text-green-500 text-xs font-medium'>Completed</p>
@@ -59,11 +70,26 @@ const DoctorAppointments = () => {
                                             >
                                                 Generate Prescription
                                             </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                                                className='text-xs text-gray-600 border border-gray-400 px-2 py-1 rounded hover:bg-gray-100 transition-colors'
+                                            >
+                                                View History
+                                            </button>
                                           </div>
-                                        : <div className='flex'>
-                                            <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
-                                            <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
-
+                                        : <div className='flex flex-col gap-1 items-start'>
+                                            <div className='flex'>
+                                                <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
+                                                <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                                                className='text-xs text-gray-600 border border-gray-400 px-2 py-1 rounded hover:bg-gray-100 transition-colors'
+                                            >
+                                                View History
+                                            </button>
                                         </div>
                             }
 
@@ -83,6 +109,13 @@ const DoctorAppointments = () => {
                         onSubmitSuccess={() => { setShowPrescriptionForm(false); setSelectedAppointment(null); dispatch(getDoctorAppointments()); }}
                     />
                 </div>
+            )}
+            {selectedPatient && (
+                <PatientHistoryModal
+                    patientId={selectedPatient.id}
+                    patientName={selectedPatient.name}
+                    onClose={() => setSelectedPatient(null)}
+                />
             )}
         </div>
     )

@@ -123,10 +123,10 @@ export const updateDoctorProfile = createAsyncThunk('doctor/updateProfile', asyn
     }
 });
 
-export const createPrescription = createAsyncThunk('doctor/createPrescription', async ({ appointmentId, medicines }, { getState, dispatch, rejectWithValue }) => {
+export const createPrescription = createAsyncThunk('doctor/createPrescription', async ({ appointmentId, medicines, notes }, { getState, dispatch, rejectWithValue }) => {
     try {
         const { dToken } = getState().doctor;
-        const { data } = await axios.post(backendUrl + '/api/prescription/create', { appointmentId, medicines }, { headers: { dToken } });
+        const { data } = await axios.post(backendUrl + '/api/prescription/create', { appointmentId, medicines, notes }, { headers: { dToken } });
         if (data.success) {
             toast.success(data.message);
             dispatch(getDoctorAppointments());
@@ -153,6 +153,42 @@ export const getPrescriptionByAppointment = createAsyncThunk('doctor/getPrescrip
     } catch (error) {
         toast.error(error?.response?.data?.message || error.message);
         return rejectWithValue(error?.response?.data?.message || error.message);
+    }
+});
+
+export const getPatientHistory = createAsyncThunk('doctor/getPatientHistory', async (patientId, { getState, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.get(backendUrl + '/api/doctor/patient-history/' + patientId, { headers: { dToken } });
+        if (data.success) {
+            return { patient: data.patient, prescriptions: data.prescriptions, labReports: data.labReports || [] };
+        } else {
+            toast.error(data.message || 'Failed to load patient history');
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
+    }
+});
+
+export const updatePatientHealth = createAsyncThunk('doctor/updatePatientHealth', async ({ patientId, allergies, chronicConditions }, { getState, dispatch, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.put(backendUrl + '/api/doctor/patient-health/' + patientId, { allergies, chronicConditions }, { headers: { dToken } });
+        if (data.success) {
+            toast.success(data.message || 'Health information updated');
+            dispatch(getPatientHistory(patientId));
+            return data.patient;
+        } else {
+            toast.error(data.message || 'Update failed');
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { slotDateFormat } from '../utils/helpers'
@@ -8,11 +8,13 @@ import {
   startAppointmentStripe,
   verifyStripePayment,
 } from '../store/slices/userSlice'
+import LabReportUpload from '../components/LabReportUpload'
 
 const MyAppoinments = () => {
   const { token, appointments } = useSelector((state) => state.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [uploadAppointment, setUploadAppointment] = useState(null)
 
   useEffect(() => {
     if (token) {
@@ -134,6 +136,14 @@ const MyAppoinments = () => {
                         Cancel appointment
                       </button>
                     )}
+                  {!item.cancelled && (
+                    <button
+                      onClick={() => setUploadAppointment(item)}
+                      className="text-sm text-[#3B82F6] text-center sm:min-w-48 py-2 border border-[#3B82F6] rounded-lg hover:bg-[#3B82F6] hover:text-white hover:shadow-sm transition-all duration-200"
+                    >
+                      Upload lab report
+                    </button>
+                  )}
                   {item.cancelled && !item.isCompleted && (
                     <button className="sm:min-w-48 py-2 border border-red-500 rounded-lg text-red-500 text-sm">
                       Appointment cancelled
@@ -150,6 +160,17 @@ const MyAppoinments = () => {
           </div>
         )}
       </div>
+
+      {uploadAppointment && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <LabReportUpload
+            appointmentId={uploadAppointment._id}
+            appointmentLabel={`${slotDateFormat(uploadAppointment.slotDate)} | ${uploadAppointment.slotTime} – ${uploadAppointment.docData?.name}`}
+            onSuccess={() => setUploadAppointment(null)}
+            onCancel={() => setUploadAppointment(null)}
+          />
+        </div>
+      )}
     </>
   )
 }
