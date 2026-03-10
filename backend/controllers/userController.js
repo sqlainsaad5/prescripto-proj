@@ -6,6 +6,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
 import appointmentModel from '../models/appointmentModel.js'
 import labReportModel from '../models/labReportModel.js'
+import followUpInviteModel from '../models/followUpInviteModel.js'
 import Stripe from 'stripe'
 import { sendContactEmail } from '../services/emailService.js'
 
@@ -361,4 +362,79 @@ const uploadLabReport = async (req, res) => {
     }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport }
+// GET follow-up offer by token (no auth) – for priority booking link
+const getFollowUpByToken = async (req, res) => {
+    try {
+        const { token } = req.query
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token required' })
+        }
+        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
+        if (!invite) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        }
+        const docData = await doctorModel.findById(invite.docId).select('-password')
+        if (!docData) {
+            return res.status(404).json({ success: false, message: 'Doctor not found' })
+        }
+        const docDataObj = docData.toObject ? docData.toObject() : docData
+        delete docDataObj.slots_booked
+        return res.json({
+            success: true,
+            docId: invite.docId,
+            slotDate: invite.slotDate,
+            slotTime: invite.slotTime,
+            docData: docDataObj,
+            patientId: invite.patientId.toString()
+        })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// POST confirm follow-up (authUser) – create appointment without updating slots_booked
+const confirmFollowUp = async (req, res) => {
+    try {
+        const userId = req.userId
+        const { token } = req.body
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token required' })
+        }
+        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
+        if (!invite) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        }
+        if (invite.patientId.toString() !== userId) {
+            return res.status(403).json({ success: false, message: 'This link is for another patient' })
+        }
+
+        const { docId, slotDate, slotTime } = invite
+        const userData = await userModel.findById(userId).select('-password')
+        const docData = await doctorModel.findById(docId).select('-password')
+        if (!userData || !docData) {
+            return res.status(404).json({ success: false, message: 'User or doctor not found' })
+        }
+        delete docData.slots_booked
+
+        const appointmentData = {
+            userId,
+            docId,
+            userData,
+            docData,
+            amount: docData.fee,
+            slotTime,
+            slotDate,
+            date: Date.now()
+        }
+        const newAppointment = new appointmentModel(appointmentData)
+        await newAppointment.save()
+        await followUpInviteModel.findByIdAndUpdate(invite._id, { status: 'completed' })
+        return res.json({ success: true, message: 'Follow-up appointment confirmed' })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport, getFollowUpByToken, confirmFollowUp }

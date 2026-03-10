@@ -90,6 +90,52 @@ export const getMyPrescriptions = createAsyncThunk('user/getMyPrescriptions', as
     }
 });
 
+// Get follow-up offer by token (no auth) – for priority booking link page
+export const getFollowUpByToken = createAsyncThunk(
+    'user/getFollowUpByToken',
+    async (token, { rejectWithValue }) => {
+        try {
+            const { data } = await axios.get(backendUrl + '/api/user/follow-up-by-token?token=' + encodeURIComponent(token));
+            if (data.success) {
+                return data;
+            }
+            return rejectWithValue(data.message || 'Invalid or expired link');
+        } catch (error) {
+            const msg = error?.response?.data?.message || error.message;
+            return rejectWithValue(msg);
+        }
+    }
+);
+
+// Confirm follow-up appointment (auth required)
+export const confirmFollowUp = createAsyncThunk(
+    'user/confirmFollowUp',
+    async (token, { getState, rejectWithValue }) => {
+        try {
+            const { token: authToken } = getState().user;
+            if (!authToken) {
+                toast.warn('Login to confirm this follow-up');
+                return rejectWithValue('Not authenticated');
+            }
+            const { data } = await axios.post(
+                backendUrl + '/api/user/confirm-follow-up',
+                { token },
+                { headers: { token: authToken } }
+            );
+            if (data.success) {
+                toast.success(data.message);
+                return data;
+            }
+            toast.error(data.message);
+            return rejectWithValue(data.message);
+        } catch (error) {
+            const msg = error?.response?.data?.message || error.message;
+            toast.error(msg);
+            return rejectWithValue(msg);
+        }
+    }
+);
+
 // Book an appointment for a doctor at a specific date/time
 export const bookAppointment = createAsyncThunk(
     'user/bookAppointment',

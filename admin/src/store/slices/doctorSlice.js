@@ -192,6 +192,24 @@ export const updatePatientHealth = createAsyncThunk('doctor/updatePatientHealth'
     }
 });
 
+export const suggestFollowUp = createAsyncThunk('doctor/suggestFollowUp', async ({ appointmentId, slotDate, slotTime }, { getState, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.post(backendUrl + '/api/doctor/suggest-follow-up', { appointmentId, slotDate, slotTime }, { headers: { dToken } });
+        if (data.success) {
+            toast.success('Follow-up link created');
+            return data.followUpLink;
+        } else {
+            toast.error(data.message || 'Failed to create follow-up');
+            return rejectWithValue(data.message);
+        }
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
+    }
+});
+
 const doctorSlice = createSlice({
     name: 'doctor',
     initialState: {
