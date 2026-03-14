@@ -3,7 +3,7 @@ import { assets } from "../assets/assets";
 
 const About = () => {
   return (
-    <div>
+    <>
       <div className="text-center text-2xl pt-10 text-gray-500">
         <p>
           About <span className="text-gray-700 font-medium">US</span>
@@ -59,7 +59,7 @@ const About = () => {
           <p>Tailored recommendations and reminders to help you stay on top of your health.</p>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

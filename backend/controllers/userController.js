@@ -4,7 +4,9 @@ import jwt from 'jsonwebtoken'
 import userModel from '../models/userModel.js'
 import { v2 as cloudinary } from 'cloudinary'
 import doctorModel from '../models/doctorModel.js'
-import appointmentModel from '../models/appointmentModel.js';
+import appointmentModel from '../models/appointmentModel.js'
+import labReportModel from '../models/labReportModel.js'
+import followUpInviteModel from '../models/followUpInviteModel.js'
 import Stripe from 'stripe'
 import { sendContactEmail } from '../services/emailService.js'
 
@@ -103,7 +105,9 @@ const updateProfile = async (req, res) => {
         if (!name || !phone || !dob || !gender) {
             return res.json({ success: false, message: "Data Missing" })
         }
-        await userModel.findByIdAndUpdate(userId, { name, phone, address: JSON.parse(address), dob, gender })
+        // Profile updates from patients must not change health fields (allergies, chronicConditions, healthHistory); doctor-only via admin.
+        const updateData = { name, phone, address: typeof address === 'string' ? JSON.parse(address) : address, dob, gender }
+        await userModel.findByIdAndUpdate(userId, updateData)
         if (imageFile) {
             //upload image cloudinary
             const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' })
@@ -136,13 +140,14 @@ const bookAppointment = async (req, res) => {
 
         //checking for slot avaibility
         const alreadyBooked = await appointmentModel.findOne({
-            userId,
+            docId,
             slotDate,
-            slotTime
+            slotTime,
+            cancelled: false
         })
 
         if (alreadyBooked) {
-            return res.json({ success: false, message: 'slot not available' })
+            return res.json({ success: false, message: 'Slot already booked' })
         }
 
         if (slots_booked[slotDate]) {
@@ -180,6 +185,10 @@ const bookAppointment = async (req, res) => {
 
     } catch (error) {
         console.log(error)
+        if (error.code === 11000) {
+            // Duplicate key error from unique index on (docId, slotDate, slotTime)
+            return res.json({ success: false, message: 'Slot already booked' })
+        }
         res.json({ success: false, message: error.message })
 
     }
@@ -312,4 +321,120 @@ const contactUs = async (req, res) => {
     }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs }
+// Upload lab report (X-ray, blood test, diagnostic) linked to an appointment
+const uploadLabReport = async (req, res) => {
+    try {
+        const userId = req.userId
+        const { appointmentId, type } = req.body
+        const file = req.file
+
+        const validTypes = ['xray', 'blood_test', 'diagnostic']
+        if (!appointmentId || !type || !validTypes.includes(type)) {
+            return res.status(400).json({ success: false, message: "Missing or invalid appointmentId or type (xray, blood_test, diagnostic)" })
+        }
+        if (!file || !file.path) {
+            return res.status(400).json({ success: false, message: "No file uploaded" })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: "Appointment not found" })
+        }
+        if (String(appointment.userId) !== String(userId)) {
+            return res.status(403).json({ success: false, message: "Not authorized to upload for this appointment" })
+        }
+
+        const uploadResult = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
+        const fileUrl = uploadResult.secure_url
+
+        const labReport = await labReportModel.create({
+            appointmentId,
+            patientId: appointment.userId,
+            type,
+            fileUrl,
+            fileName: file.originalname || ''
+        })
+
+        return res.json({ success: true, labReport })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// GET follow-up offer by token (no auth) – for priority booking link
+const getFollowUpByToken = async (req, res) => {
+    try {
+        const { token } = req.query
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token required' })
+        }
+        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
+        if (!invite) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        }
+        const docData = await doctorModel.findById(invite.docId).select('-password')
+        if (!docData) {
+            return res.status(404).json({ success: false, message: 'Doctor not found' })
+        }
+        const docDataObj = docData.toObject ? docData.toObject() : docData
+        delete docDataObj.slots_booked
+        return res.json({
+            success: true,
+            docId: invite.docId,
+            slotDate: invite.slotDate,
+            slotTime: invite.slotTime,
+            docData: docDataObj,
+            patientId: invite.patientId.toString()
+        })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// POST confirm follow-up (authUser) – create appointment without updating slots_booked
+const confirmFollowUp = async (req, res) => {
+    try {
+        const userId = req.userId
+        const { token } = req.body
+        if (!token) {
+            return res.status(400).json({ success: false, message: 'Token required' })
+        }
+        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
+        if (!invite) {
+            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        }
+        if (invite.patientId.toString() !== userId) {
+            return res.status(403).json({ success: false, message: 'This link is for another patient' })
+        }
+
+        const { docId, slotDate, slotTime } = invite
+        const userData = await userModel.findById(userId).select('-password')
+        const docData = await doctorModel.findById(docId).select('-password')
+        if (!userData || !docData) {
+            return res.status(404).json({ success: false, message: 'User or doctor not found' })
+        }
+        delete docData.slots_booked
+
+        const appointmentData = {
+            userId,
+            docId,
+            userData,
+            docData,
+            amount: docData.fee,
+            slotTime,
+            slotDate,
+            date: Date.now()
+        }
+        const newAppointment = new appointmentModel(appointmentData)
+        await newAppointment.save()
+        await followUpInviteModel.findByIdAndUpdate(invite._id, { status: 'completed' })
+        return res.json({ success: true, message: 'Follow-up appointment confirmed' })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport, getFollowUpByToken, confirmFollowUp }

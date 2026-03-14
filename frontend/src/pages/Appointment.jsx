@@ -1,13 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { assets } from "../assets/assets";
-import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import RelatedDoctors from "../components/RelatedDoctors";
-import { toast } from 'react-toastify'
-import axios from "axios";
+import { toast } from 'react-toastify';
 import { getDoctorsData } from "../store/slices/doctorSlice";
-
+import { bookAppointment as bookAppointmentThunk } from "../store/slices/userSlice";
 
 const Appointment = () => {
   const { docId } = useParams();
@@ -17,8 +15,6 @@ const Appointment = () => {
   const { doctors } = useSelector((state) => state.doctor);
   const { token } = useSelector((state) => state.user);
   const { currencySymbol } = useSelector((state) => state.app);
-
-  const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   const daysofWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -70,15 +66,17 @@ const Appointment = () => {
         const slotDate = day + "_" + month + "_" + year
         const slotTimeVar = formattedTime
 
-        const isSlotAvailable = docInfo.slots_booked && docInfo.slots_booked[slotDate] && docInfo.slots_booked[slotDate].includes(slotTimeVar) ? false : true
+        const isSlotBooked =
+          docInfo.slots_booked &&
+          docInfo.slots_booked[slotDate] &&
+          docInfo.slots_booked[slotDate].includes(slotTimeVar)
 
-        if (isSlotAvailable) {
-          //add slot to array
-          timeSlots.push({
-            datetime: new Date(currentDate),
-            time: formattedTime,
-          });
-        }
+        // add slot to array, marking whether it is already booked
+        timeSlots.push({
+          datetime: new Date(currentDate),
+          time: formattedTime,
+          booked: !!isSlotBooked,
+        });
 
         //incrememt time by 30minutes
         currentDate.setMinutes(currentDate.getMinutes() + 30);
@@ -87,11 +85,17 @@ const Appointment = () => {
     }
   };
 
-  const bookAppointment = async () => {
+  const handleBookAppointment = async () => {
     if (!token) {
       toast.warn('Login to book appointment')
       return navigate('/login')
     }
+
+    if (!slotTime) {
+      toast.warn('Please select a time slot before booking')
+      return
+    }
+
     try {
       const date = docSlots[slotIndex][0].datetime
 
@@ -101,18 +105,17 @@ const Appointment = () => {
 
       const slotDate = day + "_" + month + "_" + year
 
-      const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { docId, slotDate, slotTime }, { headers: { token } })
-      if (data.success) {
-        toast.success(data.message)
-        dispatch(getDoctorsData())
-        navigate('/my-appointments')
-      } else {
-        toast.error(data.message)
-      }
+      const resultAction = await dispatch(
+        bookAppointmentThunk({ docId, slotDate, slotTime })
+      )
 
+      if (bookAppointmentThunk.fulfilled.match(resultAction)) {
+        // doctor data already refreshed in thunk; just navigate
+        navigate('/my-appointments')
+      }
     } catch (error) {
+      // errors are already handled and toasted inside the thunk
       console.log(error)
-      toast.error(error.message)
     }
   }
 
@@ -124,9 +127,15 @@ const Appointment = () => {
     getAvailableSlots();
   }, [docInfo]);
 
+  // Whenever the global doctor data changes (e.g., another user books a slot),
+  // refresh this doctor's info and recompute its available slots.
+  useEffect(() => {
+    fetchDocInfo();
+  }, [doctors]);
+
   return (
     docInfo && (
-      <div>
+      <>
         {/* ------------Doctor Details------------*/}
         <div className="flex flex-col sm:flex-row gap-4">
           <div>
@@ -193,24 +202,31 @@ const Appointment = () => {
             {docSlots.length > 0 && docSlots[slotIndex] &&
               docSlots[slotIndex].map((item, index) => (
                 <p
-                  onClick={() => setSlotTime(item.time)}
-                  className={`text-sm font-light flex-shrink-0 px-5 py-2 rounded-full cursor-pointer ${item.time === slotTime
-                    ? "bg-primary text-white"
-                    : "text-gray-400 border border-gray-300"
-                    } `}
-                  key={index}
-                >
-                  {item.time.toLowerCase()}
-                </p>
+                onClick={() => {
+                  if (!item.booked) {
+                    setSlotTime(item.time)
+                  }
+                }}
+                className={`text-sm font-light flex-shrink-0 px-5 py-2 rounded-full ${
+                  item.booked
+                    ? "bg-red-100 text-red-500 border border-red-300 cursor-not-allowed"
+                    : item.time === slotTime
+                    ? "bg-primary text-white cursor-pointer"
+                    : "text-gray-400 border border-gray-300 cursor-pointer hover:bg-primary/5"
+                } `}
+                key={index}
+              >
+                {item.time.toLowerCase()}
+              </p>
               ))}
           </div>
-          <button onClick={bookAppointment} className="bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6">
+          <button onClick={handleBookAppointment} className="bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6">
             Book an appointment
           </button>
         </div>
         {/* ------------Related Doctors------------*/}
         <RelatedDoctors docId={docId} speciality={docInfo.speciality} />
-      </div>
+      </>
     )
   );
 };

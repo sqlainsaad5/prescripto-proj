@@ -1,5 +1,5 @@
 import React from 'react'
-import { assets } from '../assets/assets'
+import { assets } from '../../assets/assets'
 
 const Header = () => {
   const adminPanelUrl = import.meta.env.VITE_ADMIN_PANEL_URL
@@ -41,3 +41,4 @@ const Header = () => {
 }
 
 export default Header
+

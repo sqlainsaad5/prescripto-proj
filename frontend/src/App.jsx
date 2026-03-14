@@ -9,8 +9,9 @@ import MyProfile from './pages/MyProfile'
 import MyAppoinments from './pages/MyAppoinments'
 import MyPrescriptions from './pages/MyPrescriptions'
 import Appointment from './pages/Appointment'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+import FollowUpBook from './pages/FollowUpBook'
+import Navbar from './components/common/Navbar'
+import Footer from './components/common/Footer'
 import { useDispatch, useSelector } from 'react-redux'
 import { getDoctorsData } from './store/slices/doctorSlice'
 import { loadUserProfileData } from './store/slices/userSlice'
@@ -43,6 +44,7 @@ const App = () => {
         <Route path='/my-appointments' element={<MyAppoinments />} />
         <Route path='/my-prescriptions' element={<MyPrescriptions />} />
         <Route path='/appointment/:docId' element={<Appointment />} />
+        <Route path='/follow-up-book' element={<FollowUpBook />} />
       </Routes>
       <Footer />
     </div>

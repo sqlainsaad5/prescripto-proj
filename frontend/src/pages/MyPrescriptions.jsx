@@ -56,7 +56,7 @@ const MyPrescriptions = () => {
   }
 
   return (
-    <div>
+    <>
       <p className='pb-3 mt-12 font-medium text-zinc-700 border-b border-gray-200'>My Prescriptions</p>
       <div>
         {prescriptions && prescriptions.length === 0 && (
@@ -86,7 +86,7 @@ const MyPrescriptions = () => {
           </div>
         ))}
       </div>
-    </div>
+    </>
   )
 }
 

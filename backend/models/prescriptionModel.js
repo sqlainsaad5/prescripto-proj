@@ -13,7 +13,8 @@ const prescriptionSchema = new mongoose.Schema({
     doctorId: { type: String, required: true },
     medicines: { type: [medicineSchema], required: true },
     prescriptionDate: { type: Date, default: Date.now },
-    prescriptionPDF: { type: String }
+    prescriptionPDF: { type: String },
+    notes: { type: String, default: "" }
 });
 
 const prescriptionModel = mongoose.models.prescription || mongoose.model('prescription', prescriptionSchema);

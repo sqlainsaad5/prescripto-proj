@@ -1,7 +1,12 @@
+import crypto from 'crypto'
 import doctorModel from "../models/doctorModel.js"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import appointmentModel from "../models/appointmentModel.js"
+import userModel from "../models/userModel.js"
+import prescriptionModel from "../models/prescriptionModel.js"
+import labReportModel from "../models/labReportModel.js"
+import followUpInviteModel from "../models/followUpInviteModel.js"
 
 
 const changeAvailability = async (req, res) => {
@@ -166,6 +171,171 @@ const updateDoctorProfile = async (req, res) => {
     }
 }
 
+// API: get patient history (EHR) - doctor may only access for patients they have an appointment with
+const getPatientHistory = async (req, res) => {
+    try {
+        const { patientId } = req.params
+        const { docId } = req.body
+
+        if (!patientId) {
+            return res.status(400).json({ success: false, message: "Patient ID required" })
+        }
+
+        const hasAppointment = await appointmentModel.findOne({
+            docId,
+            userId: patientId
+        })
+        if (!hasAppointment) {
+            return res.status(403).json({ success: false, message: "Not authorized to view this patient's history" })
+        }
+
+        const patient = await userModel.findById(patientId).select("-password")
+        if (!patient) {
+            return res.status(404).json({ success: false, message: "Patient not found" })
+        }
+
+        const prescriptions = await prescriptionModel
+            .find({ patientId })
+            .sort({ prescriptionDate: -1 })
+            .lean()
+
+        const appts = await appointmentModel.find({ docId, userId: patientId }).select('_id').lean()
+        const appointmentIds = appts.map((a) => a._id)
+        const labReports = await labReportModel
+            .find({ patientId, appointmentId: { $in: appointmentIds } })
+            .sort({ uploadedAt: -1 })
+            .lean()
+
+        return res.json({
+            success: true,
+            patient,
+            prescriptions,
+            labReports
+        })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// Doctor: update patient allergies and chronic conditions (only for patients they have an appointment with)
+const updatePatientHealth = async (req, res) => {
+    try {
+        const { patientId } = req.params
+        const { docId, allergies, chronicConditions } = req.body
+
+        if (!patientId) {
+            return res.status(400).json({ success: false, message: "Patient ID required" })
+        }
+
+        const hasAppointment = await appointmentModel.findOne({
+            docId,
+            userId: patientId
+        })
+        if (!hasAppointment) {
+            return res.status(403).json({ success: false, message: "Not authorized to update this patient's health info" })
+        }
+
+        let allergiesArr = Array.isArray(allergies) ? allergies : []
+        if (typeof allergies === 'string') {
+            try {
+                const parsed = JSON.parse(allergies || '[]')
+                allergiesArr = Array.isArray(parsed) ? parsed : []
+            } catch (_) {
+                allergiesArr = []
+            }
+        }
+
+        let conditionsArr = Array.isArray(chronicConditions) ? chronicConditions : []
+        if (typeof chronicConditions === 'string') {
+            try {
+                const parsed = JSON.parse(chronicConditions || '[]')
+                conditionsArr = Array.isArray(parsed) ? parsed : []
+            } catch (_) {
+                conditionsArr = []
+            }
+        }
+
+        const patient = await userModel
+            .findByIdAndUpdate(patientId, { allergies: allergiesArr, chronicConditions: conditionsArr }, { new: true })
+            .select('-password')
+
+        if (!patient) {
+            return res.status(404).json({ success: false, message: "Patient not found" })
+        }
+
+        return res.json({ success: true, message: "Health information updated", patient })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+// Suggest follow-up: reserve slot and create priority booking link for patient
+const suggestFollowUp = async (req, res) => {
+    try {
+        const { docId, appointmentId, slotDate, slotTime } = req.body
+        if (!appointmentId || !slotDate || !slotTime) {
+            return res.status(400).json({ success: false, message: 'appointmentId, slotDate and slotTime required' })
+        }
+
+        const appointmentData = await appointmentModel.findById(appointmentId)
+        if (!appointmentData) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        }
+        if (appointmentData.docId.toString() !== docId.toString()) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this appointment' })
+        }
+        const patientId = appointmentData.userId
+
+        const docData = await doctorModel.findById(docId)
+        if (!docData) {
+            return res.status(404).json({ success: false, message: 'Doctor not found' })
+        }
+        let slots_booked = docData.slots_booked || {}
+
+        const alreadyBooked = await appointmentModel.findOne({
+            docId,
+            slotDate,
+            slotTime,
+            cancelled: false
+        })
+        if (alreadyBooked) {
+            return res.json({ success: false, message: 'Slot already booked' })
+        }
+        if (slots_booked[slotDate] && slots_booked[slotDate].includes(slotTime)) {
+            return res.json({ success: false, message: 'Slot not available' })
+        }
+
+        if (slots_booked[slotDate]) {
+            slots_booked[slotDate].push(slotTime)
+        } else {
+            slots_booked[slotDate] = [slotTime]
+        }
+        await doctorModel.findByIdAndUpdate(docId, { slots_booked })
+
+        const token = crypto.randomBytes(32).toString('hex')
+        const invite = new followUpInviteModel({
+            patientId,
+            docId,
+            slotDate,
+            slotTime,
+            sourceAppointmentId: appointmentId,
+            token,
+            status: 'pending',
+            createdAt: Date.now()
+        })
+        await invite.save()
+
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+        const followUpLink = `${baseUrl}/follow-up-book?token=${token}`
+        return res.json({ success: true, followUpLink })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
 export {
     changeAvailability,
     doctorList,
@@ -173,6 +343,8 @@ export {
     appointmentDoctor, appointmentComplete,
     appointmentCancel, doctorDashboard,
     doctorProfile,
-    updateDoctorProfile
-
+    updateDoctorProfile,
+    getPatientHistory,
+    updatePatientHealth,
+    suggestFollowUp
 }

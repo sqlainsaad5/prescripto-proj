@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { assets } from "../assets/assets";
+import { assets } from "../../assets/assets";
 import { useNavigate, NavLink } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../store/slices/userSlice";
+import { logout } from "../../store/slices/userSlice";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -118,3 +118,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
