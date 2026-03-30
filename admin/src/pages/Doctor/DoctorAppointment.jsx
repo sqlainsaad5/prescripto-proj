@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react'
 import { assets } from '../../assets/assets'
 import { useSelector, useDispatch } from 'react-redux'
-import { getDoctorAppointments, getDoctorProfile, completeAppointment, cancelDoctorAppointment } from '../../store/slices/doctorSlice'
+import { getDoctorAppointments, getDoctorProfile, completeAppointment, cancelDoctorAppointment, startVideoConsultation, joinDoctorVideoConsultation, endVideoConsultation } from '../../store/slices/doctorSlice'
 import { calculateAge, slotDateFormat } from '../../utils/helpers'
 import PrescriptionForm from '../../components/PrescriptionForm'
 import PatientHistoryModal from '../../components/PatientHistoryModal'
 import FollowUpModal from '../../components/FollowUpModal'
+
+// Action column buttons: stay inside table cells (table-fixed + narrow col needs w-full + min-w-0)
+const btnPrescription =
+    'w-full min-w-0 max-w-full inline-flex items-center justify-center min-h-[2rem] px-2 py-1.5 text-xs font-medium leading-snug text-white text-center bg-primary rounded-md shadow-sm hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/35 focus:ring-offset-1'
+const btnFollowUp =
+    'w-full min-w-0 max-w-full inline-flex items-center justify-center min-h-[2rem] px-2 py-1.5 text-xs font-medium leading-snug text-primary text-center bg-primary/5 border border-primary/30 rounded-md hover:bg-primary/10 hover:border-primary/45 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/25 focus:ring-offset-1'
+const btnHistory =
+    'w-full min-w-0 max-w-full inline-flex items-center justify-center min-h-[2rem] px-2 py-1.5 text-xs font-medium leading-snug text-slate-600 text-center bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:border-slate-300 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400/35 focus:ring-offset-1'
 
 const DoctorAppointments = () => {
     const { appointments, dToken, profileData } = useSelector((state) => state.doctor)
@@ -22,101 +30,163 @@ const DoctorAppointments = () => {
             dispatch(getDoctorProfile())
         }
     }, [dToken, dispatch])
+
+    const actionCell = (item) => {
+        if (item.cancelled) {
+            return (
+                <div className='flex w-full min-w-0 flex-col gap-2'>
+                    <p className='text-red-400 text-xs font-medium'>Cancelled</p>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                        className={btnHistory}
+                    >
+                        View History
+                    </button>
+                </div>
+            )
+        }
+        if (item.isCompleted) {
+            return (
+                <div className='flex w-full min-w-0 flex-col gap-2'>
+                    <p className='text-green-500 text-xs font-medium'>Completed</p>
+                    <button
+                        type="button"
+                        onClick={() => { setSelectedAppointment(item); setShowPrescriptionForm(true); }}
+                        className={btnPrescription}
+                    >
+                        Generate Prescription
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setAppointmentForFollowUp(item)}
+                        className={btnFollowUp}
+                    >
+                        Follow-up
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                        className={btnHistory}
+                    >
+                        View History
+                    </button>
+                </div>
+            )
+        }
+        return (
+            <div className='flex w-full min-w-0 flex-col gap-2'>
+                <div className='flex'>
+                    <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
+                    <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
+                </div>
+                {item.consultationMode === 'video' && (
+                    <>
+                        {item.videoStatus === 'live' ? (
+                            <button
+                                type="button"
+                                onClick={() => dispatch(joinDoctorVideoConsultation(item._id))}
+                                className='w-full min-w-0 text-xs text-indigo-600 border border-indigo-500 px-2 py-1.5 rounded-md text-center hover:bg-indigo-50 transition-colors'
+                            >
+                                Join Call
+                            </button>
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => dispatch(startVideoConsultation(item._id))}
+                                className='w-full min-w-0 text-xs text-indigo-600 border border-indigo-500 px-2 py-1.5 rounded-md text-center hover:bg-indigo-50 transition-colors'
+                            >
+                                Start Call
+                            </button>
+                        )}
+                        {item.videoStatus === 'live' && (
+                            <button
+                                type="button"
+                                onClick={() => dispatch(endVideoConsultation(item._id))}
+                                className='w-full min-w-0 text-xs text-red-500 border border-red-500 px-2 py-1.5 rounded-md text-center hover:bg-red-50 transition-colors'
+                            >
+                                End Call
+                            </button>
+                        )}
+                    </>
+                )}
+                <button
+                    type="button"
+                    onClick={() => setAppointmentForFollowUp(item)}
+                    className={btnFollowUp}
+                >
+                    Follow-up
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                    className={btnHistory}
+                >
+                    View History
+                </button>
+            </div>
+        )
+    }
+
     return (
         <div className='w-full max-w-6xl m-5'>
             <p className='mb-3 text-lg font-medium'> All Appointments</p>
-            <div className='bg-white border rounded text-sm max-h-[80vh] min-h-[50vh] overflow-y-scroll'>
-                <div className='max-sm:hidden grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 py-3 px-6 border-b'>
-                    <p>#</p>
-                    <p>Patient</p>
-                    <p>Payment</p>
-                    <p>Age</p>
-                    <p>Date & Time</p>
-                    <p>Fees</p>
-                    <p>Action</p>
-                </div>
-                {
-                    [...appointments].reverse().map((item, index) => (
-                        <div className='flex flex-wrap justify-between max-sm:gap-5 max-sm:text-base sm:grid grid-cols-[0.5fr_2fr_1fr_1fr_3fr_1fr_1fr] gap-1 items-center text-gray-500 py-3 px-6 border-b hover:bg-gray-500' key={index}>
-                            <p className='max-sm:hidden'>{index + 1}</p>
-
-                            <div className='flex items-center gap-2'>
-                                <img className='w-8 rounded-full' src={item.userData.image} alt="" /><p>{item.userData.name}</p>
-                            </div>
-                            <div>
-                                <p className='text-xs inline border border-primary px-2 rounded-full'>
-                                    {item.payment ? "Paid" : "Cash"}
-                                </p>
-                            </div>
-                            <p className='max-sm:hidden'>{calculateAge(item.userData.dob)}</p>
-                            <p>{slotDateFormat(item.slotDate)},{item.slotTime}</p>
-                            <p>{currency}{item.amount}</p>
-                            {
-                                item.cancelled
-                                    ? <div className='flex flex-col gap-1 items-start'>
-                                        <p className='text-red-400 text-xs font-medium'>Cancelled</p>
-                                        <button
-                                            type="button"
-                                            onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                                            className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
-                                        >
-                                            View History
-                                        </button>
-                                      </div>
-                                    : item.isCompleted
-                                        ? <div className='flex flex-col gap-1 items-start'>
-                                            <p className='text-green-500 text-xs font-medium'>Completed</p>
-                                            <button
-                                                type="button"
-                                                onClick={() => { setSelectedAppointment(item); setShowPrescriptionForm(true); }}
-                                                className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
-                                            >
-                                                Generate Prescription
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setAppointmentForFollowUp(item)}
-                                                className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
-                                            >
-                                                Follow-up
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                                                className='text-xs text-gray-600 border border-gray-400 px-2 py-1 rounded hover:bg-gray-100 transition-colors'
-                                            >
-                                                View History
-                                            </button>
-                                          </div>
-                                        : <div className='flex flex-col gap-1 items-start'>
-                                            <div className='flex'>
-                                                <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
-                                                <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setAppointmentForFollowUp(item)}
-                                                className='text-xs text-primary border border-primary px-2 py-1 rounded hover:bg-primary hover:text-white transition-colors'
-                                            >
-                                                Follow-up
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                                                className='text-xs text-gray-600 border border-gray-400 px-2 py-1 rounded hover:bg-gray-100 transition-colors'
-                                            >
-                                                View History
-                                            </button>
+            <div className='bg-white border rounded text-sm max-h-[80vh] min-h-[50vh] overflow-y-scroll overflow-x-auto'>
+                <table className='w-full min-w-[640px] table-fixed border-collapse'>
+                    <colgroup>
+                        <col className='w-[5%]' />
+                        <col className='w-[18%]' />
+                        <col className='w-[10%]' />
+                        <col className='w-[8%]' />
+                        <col className='w-[26%]' />
+                        <col className='w-[10%]' />
+                        <col className='w-[23%]' />
+                    </colgroup>
+                    <thead className='max-sm:hidden'>
+                        <tr className='border-b'>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>#</th>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>Patient</th>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>Payment</th>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>Age</th>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>Date & Time</th>
+                            <th scope="col" className='py-3 px-6 text-left font-normal'>Fees</th>
+                            <th scope="col" className='py-3 px-3 sm:px-4 text-left font-normal'>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[...appointments].reverse().map((item, index) => (
+                            <tr key={item._id ?? index} className='text-gray-500 border-b hover:bg-gray-500'>
+                                <td className='max-sm:hidden py-3 px-6 align-middle'>{index + 1}</td>
+                                <td className='py-3 px-6 align-middle'>
+                                    <div className='flex flex-col gap-1 min-w-0'>
+                                        <div className='flex items-center gap-2 min-w-0'>
+                                            <img className='w-8 shrink-0 rounded-full' src={item.userData.image} alt="" />
+                                            <span className='truncate'>{item.userData.name}</span>
                                         </div>
-                            }
-
-                            <div>
-
-                            </div>
-                        </div>
-
-                    ))
-                }
+                                        <span
+                                            className={`self-start rounded border px-1.5 py-0.5 text-[10px] sm:text-xs ${
+                                                item.consultationMode === 'video'
+                                                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                                                    : 'border-slate-200 bg-slate-50 text-slate-600'
+                                            }`}
+                                        >
+                                            {item.consultationMode === 'video' ? 'Video' : 'In person'}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className='py-3 px-6 align-middle'>
+                                    <span className='text-xs inline border border-primary px-2 rounded-full'>
+                                        {item.payment ? 'Paid' : 'Cash'}
+                                    </span>
+                                </td>
+                                <td className='max-sm:hidden py-3 px-6 align-middle'>{calculateAge(item.userData.dob)}</td>
+                                <td className='py-3 px-6 align-middle'>{slotDateFormat(item.slotDate)},{item.slotTime}</td>
+                                <td className='py-3 px-6 align-middle'>{currency}{item.amount}</td>
+                                <td className='min-w-0 py-3 px-3 sm:px-4 align-top'>{actionCell(item)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
             {showPrescriptionForm && selectedAppointment && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

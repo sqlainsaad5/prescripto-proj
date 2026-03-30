@@ -7,7 +7,7 @@ import userModel from "../models/userModel.js"
 import prescriptionModel from "../models/prescriptionModel.js"
 import labReportModel from "../models/labReportModel.js"
 import followUpInviteModel from "../models/followUpInviteModel.js"
-
+import { isWithinJoinWindow, buildVideoJoinPayload } from "../utils/videoConsultation.js"
 
 const changeAvailability = async (req, res) => {
     try {
@@ -336,6 +336,110 @@ const suggestFollowUp = async (req, res) => {
     }
 }
 
+const startVideoConsultation = async (req, res) => {
+    try {
+        const { docId, appointmentId } = req.body
+        if (!appointmentId) {
+            return res.status(400).json({ success: false, message: 'Appointment ID required' })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        }
+        if (String(appointment.docId) !== String(docId)) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this appointment' })
+        }
+        if (appointment.cancelled || appointment.isCompleted) {
+            return res.status(400).json({ success: false, message: 'Appointment is not active for video call' })
+        }
+        if (appointment.consultationMode !== 'video') {
+            return res.status(400).json({ success: false, message: 'This appointment is not configured for video consultation' })
+        }
+        if (!isWithinJoinWindow(appointment)) {
+            return res.status(400).json({ success: false, message: 'Video call can only be started near appointment time' })
+        }
+
+        const videoRoomId = appointment.videoRoomId || `prescripto-${appointment._id.toString()}`
+        appointment.videoProvider = appointment.videoProvider || 'jitsi'
+        appointment.videoRoomId = videoRoomId
+        appointment.videoStatus = 'live'
+        appointment.callStartedAt = appointment.callStartedAt || Date.now()
+        await appointment.save()
+
+        const session = buildVideoJoinPayload(appointment, 'doctor')
+        return res.json({ success: true, message: 'Video call started', session })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+const getDoctorVideoJoinDetails = async (req, res) => {
+    try {
+        const { docId } = req.body
+        const { appointmentId } = req.params
+        if (!appointmentId) {
+            return res.status(400).json({ success: false, message: 'Appointment ID required' })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        }
+        if (String(appointment.docId) !== String(docId)) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this appointment' })
+        }
+        if (appointment.cancelled || appointment.isCompleted) {
+            return res.status(400).json({ success: false, message: 'Appointment is not active for video call' })
+        }
+        if (appointment.consultationMode !== 'video') {
+            return res.status(400).json({ success: false, message: 'This appointment is not configured for video consultation' })
+        }
+        if (!appointment.videoRoomId || appointment.videoStatus !== 'live') {
+            return res.status(400).json({ success: false, message: 'Video call is not started yet' })
+        }
+        if (!isWithinJoinWindow(appointment)) {
+            return res.status(400).json({ success: false, message: 'Video call can only be joined near appointment time' })
+        }
+
+        const session = buildVideoJoinPayload(appointment, 'doctor')
+        return res.json({ success: true, session })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
+const endVideoConsultation = async (req, res) => {
+    try {
+        const { docId, appointmentId } = req.body
+        if (!appointmentId) {
+            return res.status(400).json({ success: false, message: 'Appointment ID required' })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        }
+        if (String(appointment.docId) !== String(docId)) {
+            return res.status(403).json({ success: false, message: 'Not authorized for this appointment' })
+        }
+        if (appointment.consultationMode !== 'video') {
+            return res.status(400).json({ success: false, message: 'This appointment is not configured for video consultation' })
+        }
+
+        appointment.videoStatus = 'ended'
+        appointment.callEndedAt = Date.now()
+        await appointment.save()
+
+        return res.json({ success: true, message: 'Video call ended' })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
+    }
+}
+
 export {
     changeAvailability,
     doctorList,
@@ -346,5 +450,8 @@ export {
     updateDoctorProfile,
     getPatientHistory,
     updatePatientHealth,
-    suggestFollowUp
+    suggestFollowUp,
+    startVideoConsultation,
+    getDoctorVideoJoinDetails,
+    endVideoConsultation
 }

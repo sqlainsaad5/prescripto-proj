@@ -9,7 +9,7 @@ import labReportModel from '../models/labReportModel.js'
 import followUpInviteModel from '../models/followUpInviteModel.js'
 import Stripe from 'stripe'
 import { sendContactEmail } from '../services/emailService.js'
-
+import { isWithinJoinWindow, buildVideoJoinPayload } from '../utils/videoConsultation.js'
 
 const registerUser = async (req, res) => {
     try {
@@ -127,7 +127,7 @@ const updateProfile = async (req, res) => {
 //api to book appointment
 const bookAppointment = async (req, res) => {
     try {
-        const { docId, slotDate, slotTime } = req.body
+        const { docId, slotDate, slotTime, consultationMode } = req.body
         const userId = req.userId
 
         const docData = await doctorModel.findById(docId).select('-password')
@@ -173,7 +173,8 @@ const bookAppointment = async (req, res) => {
             amount: docData.fee,
             slotTime,
             slotDate,
-            date: Date.now()
+            date: Date.now(),
+            consultationMode: consultationMode === 'video' ? 'video' : 'in_person'
         }
         const newAppointment = new appointmentModel(appointmentData)
         await newAppointment.save()
@@ -191,6 +192,43 @@ const bookAppointment = async (req, res) => {
         }
         res.json({ success: false, message: error.message })
 
+    }
+}
+
+const getUserVideoJoinDetails = async (req, res) => {
+    try {
+        const userId = req.userId
+        const { appointmentId } = req.params
+
+        if (!appointmentId) {
+            return res.status(400).json({ success: false, message: 'Appointment ID required' })
+        }
+
+        const appointment = await appointmentModel.findById(appointmentId)
+        if (!appointment) {
+            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        }
+        if (String(appointment.userId) !== String(userId)) {
+            return res.status(403).json({ success: false, message: 'Unauthorized Action' })
+        }
+        if (appointment.cancelled || appointment.isCompleted) {
+            return res.status(400).json({ success: false, message: 'Appointment is not active for video call' })
+        }
+        if (appointment.consultationMode !== 'video') {
+            return res.status(400).json({ success: false, message: 'This appointment is not configured for video consultation' })
+        }
+        if (!appointment.videoRoomId || appointment.videoStatus !== 'live') {
+            return res.status(400).json({ success: false, message: 'Doctor has not started the call yet' })
+        }
+        if (!isWithinJoinWindow(appointment)) {
+            return res.status(400).json({ success: false, message: 'Video call can only be joined near appointment time' })
+        }
+
+        const session = buildVideoJoinPayload(appointment, 'patient')
+        return res.json({ success: true, session })
+    } catch (error) {
+        console.log(error)
+        res.json({ success: false, message: error.message })
     }
 }
 
@@ -417,6 +455,9 @@ const confirmFollowUp = async (req, res) => {
         }
         delete docData.slots_booked
 
+        const sourceAppointment = await appointmentModel.findById(invite.sourceAppointmentId).select('consultationMode')
+        const consultationMode = sourceAppointment?.consultationMode === 'video' ? 'video' : 'in_person'
+
         const appointmentData = {
             userId,
             docId,
@@ -425,7 +466,8 @@ const confirmFollowUp = async (req, res) => {
             amount: docData.fee,
             slotTime,
             slotDate,
-            date: Date.now()
+            date: Date.now(),
+            consultationMode
         }
         const newAppointment = new appointmentModel(appointmentData)
         await newAppointment.save()
@@ -437,4 +479,4 @@ const confirmFollowUp = async (req, res) => {
     }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport, getFollowUpByToken, confirmFollowUp }
+export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport, getFollowUpByToken, confirmFollowUp, getUserVideoJoinDetails }

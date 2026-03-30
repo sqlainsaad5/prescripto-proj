@@ -11,7 +11,13 @@ const appointmentSchema = new mongoose.Schema({
     date: { type: Number, required: true },
     cancelled: { type: Boolean, default: false },
     payment: { type: Boolean, default: false },
-    isCompleted: { type: Boolean, default: false }
+    isCompleted: { type: Boolean, default: false },
+    consultationMode: { type: String, enum: ['in_person', 'video'], default: 'in_person' },
+    videoProvider: { type: String, default: null },
+    videoRoomId: { type: String, default: null },
+    videoStatus: { type: String, enum: ['not_started', 'live', 'ended'], default: 'not_started' },
+    callStartedAt: { type: Number, default: null },
+    callEndedAt: { type: Number, default: null }
 })
 
 // Ensure a doctor can have only one active (non-cancelled) appointment

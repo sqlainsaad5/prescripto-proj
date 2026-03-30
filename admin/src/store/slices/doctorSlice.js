@@ -210,6 +210,67 @@ export const suggestFollowUp = createAsyncThunk('doctor/suggestFollowUp', async 
     }
 });
 
+export const startVideoConsultation = createAsyncThunk('doctor/startVideoConsultation', async (appointmentId, { getState, dispatch, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.post(backendUrl + '/api/doctor/video/start', { appointmentId }, { headers: { dToken } });
+        if (data.success) {
+            const joinUrl = data?.session?.joinUrl;
+            if (joinUrl) {
+                window.open(joinUrl, '_blank', 'noopener,noreferrer');
+            }
+            toast.success(data.message || 'Video call started');
+            dispatch(getDoctorAppointments());
+            return data.session;
+        }
+        toast.error(data.message || 'Unable to start video call');
+        return rejectWithValue(data.message);
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
+    }
+});
+
+export const joinDoctorVideoConsultation = createAsyncThunk('doctor/joinDoctorVideoConsultation', async (appointmentId, { getState, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.get(backendUrl + '/api/doctor/video-session/' + appointmentId, { headers: { dToken } });
+        if (data.success) {
+            const joinUrl = data?.session?.joinUrl;
+            if (!joinUrl) {
+                return rejectWithValue('Video join URL missing');
+            }
+            window.open(joinUrl, '_blank', 'noopener,noreferrer');
+            return data.session;
+        }
+        toast.error(data.message || 'Unable to join video call');
+        return rejectWithValue(data.message);
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
+    }
+});
+
+export const endVideoConsultation = createAsyncThunk('doctor/endVideoConsultation', async (appointmentId, { getState, dispatch, rejectWithValue }) => {
+    try {
+        const { dToken } = getState().doctor;
+        const { data } = await axios.post(backendUrl + '/api/doctor/video/end', { appointmentId }, { headers: { dToken } });
+        if (data.success) {
+            toast.success(data.message || 'Video call ended');
+            dispatch(getDoctorAppointments());
+            return true;
+        }
+        toast.error(data.message || 'Unable to end video call');
+        return rejectWithValue(data.message);
+    } catch (error) {
+        const message = error?.response?.data?.message || error.message;
+        toast.error(message);
+        return rejectWithValue(message);
+    }
+});
+
 const doctorSlice = createSlice({
     name: 'doctor',
     initialState: {

@@ -22,6 +22,7 @@ const Appointment = () => {
   const [docSlots, setDocSlots] = useState([]);
   const [slotIndex, setSlotsIndex] = useState(0);
   const [slotTime, setSlotTime] = useState("");
+  const [consultationMode, setConsultationMode] = useState("in_person");
 
   const fetchDocInfo = async () => {
     const docInfo = doctors.find((doc) => doc._id === docId);
@@ -106,7 +107,7 @@ const Appointment = () => {
       const slotDate = day + "_" + month + "_" + year
 
       const resultAction = await dispatch(
-        bookAppointmentThunk({ docId, slotDate, slotTime })
+        bookAppointmentThunk({ docId, slotDate, slotTime, consultationMode })
       )
 
       if (bookAppointmentThunk.fulfilled.match(resultAction)) {
@@ -181,6 +182,31 @@ const Appointment = () => {
         </div>
         {/* ------------Booking Slots------------*/}
         <div className="sm:ml-72 sm:pl-4 mt-4 font-medium text-gray-700">
+          <p>Consultation type</p>
+          <div className="flex items-center gap-3 mt-3">
+            <button
+              type="button"
+              onClick={() => setConsultationMode("in_person")}
+              className={`px-4 py-2 text-sm rounded-full border transition-colors ${
+                consultationMode === "in_person"
+                  ? "bg-primary text-white border-primary"
+                  : "border-gray-300 text-gray-600 hover:bg-primary/5"
+              }`}
+            >
+              In Person
+            </button>
+            <button
+              type="button"
+              onClick={() => setConsultationMode("video")}
+              className={`px-4 py-2 text-sm rounded-full border transition-colors ${
+                consultationMode === "video"
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "border-gray-300 text-gray-600 hover:bg-indigo-50"
+              }`}
+            >
+              Video Consultation
+            </button>
+          </div>
           <p>Booking slots</p>
           <div className="flex gap-3 items-center w-full overflow-x-scroll mt-4">
             {docSlots.length > 0 &&

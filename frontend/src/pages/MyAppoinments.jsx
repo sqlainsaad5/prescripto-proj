@@ -7,6 +7,7 @@ import {
   cancelAppointmentThunk,
   startAppointmentStripe,
   verifyStripePayment,
+  joinVideoConsultation,
 } from '../store/slices/userSlice'
 import LabReportUpload from '../components/LabReportUpload'
 
@@ -97,6 +98,24 @@ const MyAppoinments = () => {
                   <p className="text-sm text-zinc-500">
                     {item.docData.speciality}
                   </p>
+                  <p className="mt-1.5">
+                    <span
+                      className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${
+                        item.consultationMode === 'video'
+                          ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                          : 'border-zinc-200 bg-zinc-50 text-zinc-600'
+                      }`}
+                    >
+                      {item.consultationMode === 'video'
+                        ? 'Video consultation'
+                        : 'In person'}
+                    </span>
+                  </p>
+                  {item.consultationMode === 'video' && !item.cancelled && !item.isCompleted && (
+                    <p className="text-xs text-zinc-500 mt-1 max-w-md">
+                      Join the video call after your doctor starts the session (near your appointment time).
+                    </p>
+                  )}
                   <p className="text-zinc-700 font-medium mt-2 text-sm">
                     Address
                   </p>
@@ -125,6 +144,16 @@ const MyAppoinments = () => {
                     !item.isCompleted && (
                       <button className="text-sm text-indigo-600 text-center sm:min-w-48 py-2 border rounded-lg bg-indigo-50">
                         Paid
+                      </button>
+                    )}
+                  {!item.cancelled &&
+                    item.consultationMode === 'video' &&
+                    !item.isCompleted && (
+                      <button
+                        onClick={() => dispatch(joinVideoConsultation(item._id))}
+                        className="text-sm text-indigo-600 text-center sm:min-w-48 py-2 border border-indigo-500 rounded-lg hover:bg-indigo-50 hover:shadow-sm transition-all duration-200"
+                      >
+                        Join Video Call
                       </button>
                     )}
                   {!item.cancelled &&
