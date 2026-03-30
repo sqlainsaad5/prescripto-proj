@@ -139,7 +139,7 @@ export const confirmFollowUp = createAsyncThunk(
 // Book an appointment for a doctor at a specific date/time
 export const bookAppointment = createAsyncThunk(
     'user/bookAppointment',
-    async ({ docId, slotDate, slotTime }, { getState, dispatch, rejectWithValue }) => {
+    async ({ docId, slotDate, slotTime, consultationMode }, { getState, dispatch, rejectWithValue }) => {
         try {
             const { token } = getState().user;
             if (!token) {
@@ -149,7 +149,7 @@ export const bookAppointment = createAsyncThunk(
 
             const { data } = await axios.post(
                 backendUrl + '/api/user/book-appointment',
-                { docId, slotDate, slotTime },
+                { docId, slotDate, slotTime, consultationMode },
                 { headers: { token } }
             );
 
@@ -364,6 +364,39 @@ export const uploadLabReport = createAsyncThunk(
                 return data.labReport;
             } else {
                 toast.error(data.message || 'Upload failed');
+                return rejectWithValue(data.message);
+            }
+        } catch (error) {
+            const message = error?.response?.data?.message || error.message;
+            toast.error(message);
+            return rejectWithValue(message);
+        }
+    }
+);
+
+export const joinVideoConsultation = createAsyncThunk(
+    'user/joinVideoConsultation',
+    async (appointmentId, { getState, rejectWithValue }) => {
+        try {
+            const { token } = getState().user;
+            if (!token) {
+                return rejectWithValue('Not authenticated');
+            }
+
+            const { data } = await axios.get(
+                backendUrl + '/api/user/video-session/' + appointmentId,
+                { headers: { token } }
+            );
+
+            if (data.success) {
+                const { joinUrl } = data.session || {};
+                if (!joinUrl) {
+                    return rejectWithValue('Video join URL missing');
+                }
+                window.open(joinUrl, '_blank', 'noopener,noreferrer');
+                return data.session;
+            } else {
+                toast.error(data.message || 'Unable to join video call');
                 return rejectWithValue(data.message);
             }
         } catch (error) {
