@@ -31,17 +31,18 @@ const Login = () => {
   return (
     <form onSubmit={onSubmitHandler} className="min-h-[80vh] flex items-center">
       <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg">
-        <p className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold">
           {state === "sign up" ? "Create Account" : "Log in"}
-        </p>
+        </h1>
         <p>
           Please {state === "sign up" ? "sign up" : "Log in"} up to book
           appointment
         </p>
         {state === "sign up" && (
           <div className="w-full">
-            <p>Full Name</p>
+            <label htmlFor="full-name">Full Name</label>
             <input
+              id="full-name"
               className="border border-zinc-300 rounded w-full p-2 mt-1"
               type="text"
               onChange={(e) => setName(e.target.value)}
@@ -51,8 +52,9 @@ const Login = () => {
         )}
 
         <div className="w-full">
-          <p>Email</p>
+          <label htmlFor="email">Email</label>
           <input
+            id="email"
             className="border border-zinc-300 rounded w-full p-2 mt-1"
             type="email"
             onChange={(e) => setEmail(e.target.value)}
@@ -60,8 +62,9 @@ const Login = () => {
           />
         </div>
         <div className="w-full">
-          <p>Password</p>
+          <label htmlFor="password">Password</label>
           <input
+            id="password"
             className="border border-zinc-300 rounded w-full p-2 mt-1"
             type="password"
             onChange={(e) => setPassword(e.target.value)}
@@ -72,7 +75,7 @@ const Login = () => {
           {state === "sign up" ? "create Account" : "Log in"}
         </button>
         {state === "sign up" ? (
-          <p>
+          <div>
             Already have an account?{" "}
             <span
               onClick={() => setState("Log in")}
@@ -81,9 +84,9 @@ const Login = () => {
               {" "}
               Login here
             </span>
-          </p>
+          </div>
         ) : (
-          <p>
+          <div>
             Create an new account?
             <span
               onClick={() => setState("sign up")}
@@ -92,7 +95,7 @@ const Login = () => {
               {" "}
               Click here
             </span>
-          </p>
+          </div>
         )}
       </div>
     </form>

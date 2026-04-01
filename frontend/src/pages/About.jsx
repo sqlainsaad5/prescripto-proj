@@ -1,13 +1,13 @@
 import React from "react";
-import { assets } from "../assets/assets";
+import { assets } from "../data/assets";
 
 const About = () => {
   return (
     <>
       <div className="text-center text-2xl pt-10 text-gray-500">
-        <p>
+        <h1>
           About <span className="text-gray-700 font-medium">US</span>
-        </p>
+        </h1>
       </div>
       <div className="my-10 flex flex-col md:flex-row gap-12">
         <img
@@ -40,9 +40,9 @@ const About = () => {
         </div>
       </div>
       <div>
-        <p>
+        <h2>
           WHY <span className="text-gray-700 font-semibold"> CHOOSE US</span>
-        </p>
+        </h2>
       </div>
 
       <div className="flex flex-col md:flex-row mb-20">

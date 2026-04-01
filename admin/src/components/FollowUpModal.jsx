@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { suggestFollowUp } from '../store/slices/doctorSlice';
+import { suggestFollowUp } from '../redux/slices/doctorSlice';
+import FollowUpSlotPicker from './doctor/FollowUpSlotPicker';
 
 const daysofWeek = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -89,12 +90,12 @@ const FollowUpModal = ({ appointment, slotsBooked, onClose, onSuccess }) => {
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white px-8 py-8 border rounded w-full max-w-2xl max-h-[90vh] overflow-y-auto border-gray-300">
-                <p className="mb-4 text-lg font-medium text-gray-700">
+                <h2 className="mb-4 text-lg font-medium text-gray-700">
                     Suggest follow-up for {appointment.userData?.name || 'Patient'}
-                </p>
+                </h2>
                 {followUpLink ? (
                     <div className="flex flex-col gap-3">
-                        <p className="text-sm text-gray-600">Priority booking link created. Share this link with the patient:</p>
+                        <div className="text-sm text-gray-600">Priority booking link created. Share this link with the patient:</div>
                         <div className="flex gap-2 items-center">
                             <input
                                 type="text"
@@ -120,38 +121,15 @@ const FollowUpModal = ({ appointment, slotsBooked, onClose, onSuccess }) => {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                        <p className="text-sm text-gray-600">Select date and time for the suggested follow-up.</p>
-                        <div className="flex gap-3 items-center w-full overflow-x-auto">
-                            {docSlots.map((daySlots, index) => (
-                                <div
-                                    key={index}
-                                    onClick={() => { setSlotIndex(index); setSlotTime(''); }}
-                                    className={`text-center py-4 min-w-14 rounded-full cursor-pointer flex-shrink-0 ${slotIndex === index ? 'bg-primary text-white' : 'border border-gray-200'}`}
-                                >
-                                    <p className="text-xs">{daySlots[0] && daysofWeek[daySlots[0].datetime.getDay()]}</p>
-                                    <p>{daySlots[0] && daySlots[0].datetime.getDate()}</p>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {docSlots[slotIndex]?.map((item, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    disabled={item.booked}
-                                    onClick={() => !item.booked && setSlotTime(item.time)}
-                                    className={`text-sm px-4 py-2 rounded-full ${
-                                        item.booked
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : item.time === slotTime
-                                            ? 'bg-primary text-white'
-                                            : 'border border-gray-300 hover:bg-primary/10'
-                                    }`}
-                                >
-                                    {item.time.toLowerCase()}
-                                </button>
-                            ))}
-                        </div>
+                        <div className="text-sm text-gray-600">Select date and time for the suggested follow-up.</div>
+                        <FollowUpSlotPicker
+                            docSlots={docSlots}
+                            slotIndex={slotIndex}
+                            setSlotIndex={setSlotIndex}
+                            setSlotTime={setSlotTime}
+                            slotTime={slotTime}
+                            daysofWeek={daysofWeek}
+                        />
                         <div className="flex gap-2 mt-2">
                             <button
                                 type="button"

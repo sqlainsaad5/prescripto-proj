@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { assets } from "../assets/assets";
+import { assets } from "../data/assets";
 import { useDispatch } from "react-redux";
 import { contactUs } from "../store/slices/userSlice";
 
@@ -29,9 +29,9 @@ const Contact = () => {
   return (
     <>
       <div className="text-center text-2xl pt-10 text-gray-500">
-        <p>
+        <h1>
           CONTACT <span className="text-gray-700 font-semibold">US</span>
-        </p>
+        </h1>
       </div>
 
       <div className="my-10 flex flex-col justify-center md:flex-row gap-10 mb-28 text-sm">
@@ -43,7 +43,7 @@ const Contact = () => {
             alt="Contact"
           />
           <div className="flex flex-col justify-center items-start gap-6">
-            <p className="font-semibold text-lg text-gray-600">OUR OFFICE</p>
+            <h2 className="font-semibold text-lg text-gray-600">OUR OFFICE</h2>
             <p className="text-gray-500">
               00000 Willms Station
               <br /> Suite 000, Washington, USA
@@ -52,9 +52,9 @@ const Contact = () => {
               Tel: (000) 000-0000 <br />
               Email: saadamjad558@gmail.com
             </p>
-            <p className="font-semibold text-lg text-gray-600">
+            <h2 className="font-semibold text-lg text-gray-600">
               CAREERS AT PRESCRIPTO
-            </p>
+            </h2>
             <p className="text-gray-500">
               Learn more about our teams and job openings.
             </p>
@@ -66,7 +66,7 @@ const Contact = () => {
 
         {/* Contact Form Section */}
         <div className="w-full md:max-w-[600px] border p-8 bg-white rounded-sm">
-          <p className="font-semibold text-lg text-gray-600 mb-6 uppercase tracking-wider">Send a Message</p>
+          <h2 className="font-semibold text-lg text-gray-600 mb-6 uppercase tracking-wider">Send a Message</h2>
           <form onSubmit={onSubmitHandler} className="flex flex-col gap-5">
             <div className="flex flex-col gap-1">
               <label className="text-gray-500 font-medium font-medium">Full Name</label>

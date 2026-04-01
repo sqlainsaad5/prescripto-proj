@@ -55,7 +55,7 @@ const FollowUpBook = () => {
     if (error || !offer) {
         return (
             <div className="max-w-lg mx-auto mt-12 p-6 border border-gray-200 rounded-lg bg-gray-50 text-center">
-                <p className="text-gray-700">{error || 'Invalid or expired link'}</p>
+                <div className="text-gray-700">{error || 'Invalid or expired link'}</div>
                 <Link to="/" className="text-primary hover:underline mt-2 inline-block">Back to home</Link>
             </div>
         );
@@ -66,13 +66,13 @@ const FollowUpBook = () => {
 
     return (
         <div className="max-w-lg mx-auto mt-12 p-6 border border-gray-200 rounded-lg bg-white">
-            <p className="text-lg font-medium text-gray-800 mb-2">Suggested follow-up appointment</p>
+            <h1 className="text-lg font-medium text-gray-800 mb-2">Suggested follow-up appointment</h1>
             <p className="text-sm text-gray-600 mb-4">Your doctor has suggested the following follow-up:</p>
             <div className="space-y-2 mb-6">
-                <p><span className="font-medium">Doctor:</span> {docData?.name}</p>
-                <p><span className="font-medium">Date:</span> {slotDateFormat(slotDate)}</p>
-                <p><span className="font-medium">Time:</span> {slotTime}</p>
-                <p><span className="font-medium">Fee:</span> {currencySymbol}{docData?.fee ?? '—'}</p>
+                <div><span className="font-medium">Doctor:</span> {docData?.name}</div>
+                <div><span className="font-medium">Date:</span> {slotDateFormat(slotDate)}</div>
+                <div><span className="font-medium">Time:</span> {slotTime}</div>
+                <div><span className="font-medium">Fee:</span> {currencySymbol}{docData?.fee ?? '—'}</div>
             </div>
             {!authToken ? (
                 <>
@@ -82,7 +82,7 @@ const FollowUpBook = () => {
                     </Link>
                 </>
             ) : !isForCurrentUser ? (
-                <p className="text-amber-700">This link is for another patient.</p>
+                <div className="text-amber-700">This link is for another patient.</div>
             ) : (
                 <button
                     type="button"

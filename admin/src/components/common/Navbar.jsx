@@ -1,9 +1,9 @@
 import React from "react";
-import { assets } from "../../assets/assets";
+import { assets } from "../../data/assets";
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { logoutAdmin } from '../../store/slices/adminSlice';
-import { logoutDoctor } from '../../store/slices/doctorSlice';
+import { logoutAdmin } from '../../redux/slices/adminSlice';
+import { logoutDoctor } from '../../redux/slices/doctorSlice';
 
 const Navbar = () => {
   const { aToken } = useSelector((state) => state.admin);
@@ -26,9 +26,9 @@ const Navbar = () => {
           src={assets.admin_logo}
           alt=""
         />
-        <p className="border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600">
+        <span className="border px-2.5 py-0.5 rounded-full border-gray-500 text-gray-600">
           {aToken ? "Admin" : "Doctor"}
-        </p>
+        </span>
       </div>
       <button
         onClick={logout}

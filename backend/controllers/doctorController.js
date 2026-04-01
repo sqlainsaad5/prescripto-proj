@@ -177,10 +177,6 @@ const getPatientHistory = async (req, res) => {
         const { patientId } = req.params
         const { docId } = req.body
 
-        if (!patientId) {
-            return res.status(400).json({ success: false, message: "Patient ID required" })
-        }
-
         const hasAppointment = await appointmentModel.findOne({
             docId,
             userId: patientId
@@ -223,10 +219,6 @@ const updatePatientHealth = async (req, res) => {
     try {
         const { patientId } = req.params
         const { docId, allergies, chronicConditions } = req.body
-
-        if (!patientId) {
-            return res.status(400).json({ success: false, message: "Patient ID required" })
-        }
 
         const hasAppointment = await appointmentModel.findOne({
             docId,
@@ -275,10 +267,6 @@ const updatePatientHealth = async (req, res) => {
 const suggestFollowUp = async (req, res) => {
     try {
         const { docId, appointmentId, slotDate, slotTime } = req.body
-        if (!appointmentId || !slotDate || !slotTime) {
-            return res.status(400).json({ success: false, message: 'appointmentId, slotDate and slotTime required' })
-        }
-
         const appointmentData = await appointmentModel.findById(appointmentId)
         if (!appointmentData) {
             return res.status(404).json({ success: false, message: 'Appointment not found' })
@@ -339,10 +327,6 @@ const suggestFollowUp = async (req, res) => {
 const startVideoConsultation = async (req, res) => {
     try {
         const { docId, appointmentId } = req.body
-        if (!appointmentId) {
-            return res.status(400).json({ success: false, message: 'Appointment ID required' })
-        }
-
         const appointment = await appointmentModel.findById(appointmentId)
         if (!appointment) {
             return res.status(404).json({ success: false, message: 'Appointment not found' })
@@ -379,10 +363,6 @@ const getDoctorVideoJoinDetails = async (req, res) => {
     try {
         const { docId } = req.body
         const { appointmentId } = req.params
-        if (!appointmentId) {
-            return res.status(400).json({ success: false, message: 'Appointment ID required' })
-        }
-
         const appointment = await appointmentModel.findById(appointmentId)
         if (!appointment) {
             return res.status(404).json({ success: false, message: 'Appointment not found' })
@@ -414,10 +394,6 @@ const getDoctorVideoJoinDetails = async (req, res) => {
 const endVideoConsultation = async (req, res) => {
     try {
         const { docId, appointmentId } = req.body
-        if (!appointmentId) {
-            return res.status(400).json({ success: false, message: 'Appointment ID required' })
-        }
-
         const appointment = await appointmentModel.findById(appointmentId)
         if (!appointment) {
             return res.status(404).json({ success: false, message: 'Appointment not found' })

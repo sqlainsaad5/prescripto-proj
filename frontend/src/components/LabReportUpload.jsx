@@ -27,7 +27,7 @@ const LabReportUpload = ({ appointmentId, appointmentLabel, onSuccess, onCancel 
 
   return (
     <div className="bg-white rounded-2xl shadow-md p-6 w-full max-w-md border border-gray-200">
-      <p className="text-sm font-medium text-gray-500 mb-1">Upload lab report</p>
+      <h2 className="text-sm font-medium text-gray-500 mb-1">Upload lab report</h2>
       {appointmentLabel && (
         <p className="text-base text-gray-700 mb-4">{appointmentLabel}</p>
       )}

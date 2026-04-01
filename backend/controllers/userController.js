@@ -1,4 +1,3 @@
-import validator from 'validator'
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import userModel from '../models/userModel.js'
@@ -14,20 +13,6 @@ import { isWithinJoinWindow, buildVideoJoinPayload } from '../utils/videoConsult
 const registerUser = async (req, res) => {
     try {
         const { name, email, password } = req.body
-
-        if (!name || !password || !email) {
-            return res.json({ success: false, message: 'Missing Details' })
-        }
-        //validating email format
-
-        if (!validator.isEmail(email)) {
-            return res.json({ success: false, message: 'enter a valid email' })
-        }
-        // validating strong password
-
-        if (password.length < 8) {
-            return res.json({ success: false, message: 'enter a strong password' })
-        }
 
         //hashing user password
         const salt = await bcrypt.genSalt(10)
@@ -102,9 +87,6 @@ const updateProfile = async (req, res) => {
         const imageFile = req.file
         console.log("Image file path:", imageFile?.path)
 
-        if (!name || !phone || !dob || !gender) {
-            return res.json({ success: false, message: "Data Missing" })
-        }
         // Profile updates from patients must not change health fields (allergies, chronicConditions, healthHistory); doctor-only via admin.
         const updateData = { name, phone, address: typeof address === 'string' ? JSON.parse(address) : address, dob, gender }
         await userModel.findByIdAndUpdate(userId, updateData)
@@ -199,10 +181,6 @@ const getUserVideoJoinDetails = async (req, res) => {
     try {
         const userId = req.userId
         const { appointmentId } = req.params
-
-        if (!appointmentId) {
-            return res.status(400).json({ success: false, message: 'Appointment ID required' })
-        }
 
         const appointment = await appointmentModel.findById(appointmentId)
         if (!appointment) {
@@ -345,10 +323,6 @@ const contactUs = async (req, res) => {
         const { name, email, subject, message } = req.body
         console.log("Contact Request Received:", { name, email, subject });
 
-        if (!name || !email || !subject || !message) {
-            return res.json({ success: false, message: "Details Missing" })
-        }
-
         await sendContactEmail(name, email, subject, message)
 
         res.json({ success: true, message: "Message Sent Successfully" })
@@ -366,10 +340,6 @@ const uploadLabReport = async (req, res) => {
         const { appointmentId, type } = req.body
         const file = req.file
 
-        const validTypes = ['xray', 'blood_test', 'diagnostic']
-        if (!appointmentId || !type || !validTypes.includes(type)) {
-            return res.status(400).json({ success: false, message: "Missing or invalid appointmentId or type (xray, blood_test, diagnostic)" })
-        }
         if (!file || !file.path) {
             return res.status(400).json({ success: false, message: "No file uploaded" })
         }
@@ -404,9 +374,6 @@ const uploadLabReport = async (req, res) => {
 const getFollowUpByToken = async (req, res) => {
     try {
         const { token } = req.query
-        if (!token) {
-            return res.status(400).json({ success: false, message: 'Token required' })
-        }
         const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
         if (!invite) {
             return res.status(404).json({ success: false, message: 'Invalid or expired link' })
@@ -436,9 +403,6 @@ const confirmFollowUp = async (req, res) => {
     try {
         const userId = req.userId
         const { token } = req.body
-        if (!token) {
-            return res.status(400).json({ success: false, message: 'Token required' })
-        }
         const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
         if (!invite) {
             return res.status(404).json({ success: false, message: 'Invalid or expired link' })

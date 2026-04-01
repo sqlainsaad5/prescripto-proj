@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Home from './pages/Home'
 import Doctors from './pages/Doctors'
@@ -12,24 +12,8 @@ import Appointment from './pages/Appointment'
 import FollowUpBook from './pages/FollowUpBook'
 import Navbar from './components/common/Navbar'
 import Footer from './components/common/Footer'
-import { useDispatch, useSelector } from 'react-redux'
-import { getDoctorsData } from './store/slices/doctorSlice'
-import { loadUserProfileData } from './store/slices/userSlice'
 
 const App = () => {
-  const dispatch = useDispatch()
-  const { token } = useSelector((state) => state.user)
-
-  useEffect(() => {
-    dispatch(getDoctorsData())
-  }, [dispatch])
-
-  useEffect(() => {
-    if (token) {
-      dispatch(loadUserProfileData())
-    }
-  }, [token, dispatch])
-
   return (
     <div className='mx-4 sm:mx-[10%]'>
       <Navbar />

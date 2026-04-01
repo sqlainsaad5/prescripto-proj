@@ -57,7 +57,7 @@ const MyPrescriptions = () => {
 
   return (
     <>
-      <p className='pb-3 mt-12 font-medium text-zinc-700 border-b border-gray-200'>My Prescriptions</p>
+      <h1 className='pb-3 mt-12 font-medium text-zinc-700 border-b border-gray-200'>My Prescriptions</h1>
       <div>
         {prescriptions && prescriptions.length === 0 && (
           <p className='py-6 text-zinc-500 text-sm'>No prescriptions yet.</p>
@@ -65,7 +65,7 @@ const MyPrescriptions = () => {
         {prescriptions && prescriptions.length > 0 && prescriptions.map((item, index) => (
           <div className='grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b border-gray-200' key={item._id || index}>
             <div className='flex-1 text-sm text-zinc-600'>
-              <p className='text-neutral-800 font-semibold'>Prescription</p>
+              <h2 className='text-neutral-800 font-semibold'>Prescription</h2>
               <p className='text-xs mt-1'><span className='text-neutral-700 font-medium'>Date:</span> {formatDate(item.prescriptionDate)}</p>
               <p className='text-xs'><span className='text-neutral-700 font-medium'>Medicines:</span> {item.medicines?.length || 0} item(s)</p>
             </div>

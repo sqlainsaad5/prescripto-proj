@@ -9,10 +9,6 @@ const createPrescription = async (req, res) => {
     try {
         const { docId, appointmentId, medicines, notes } = req.body;
 
-        if (!appointmentId || !Array.isArray(medicines) || medicines.length === 0) {
-            return res.json({ success: false, message: "Missing appointment or medicines data" });
-        }
-
         const appointment = await appointmentModel.findById(appointmentId);
 
         if (!appointment) {
