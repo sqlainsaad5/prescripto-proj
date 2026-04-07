@@ -9,11 +9,21 @@ const validateRequest = (schema, source = 'body') => {
         })
 
         if (error) {
-            const details = error.details.map((item) => item.message)
+            const details = error.details.map((item) =>
+                item.message.replace(/^"|"$/g, '')
+            )
+            const fieldErrors = {}
+            for (const item of error.details) {
+                const key = item.path.length ? item.path.join('.') : '_form'
+                if (!fieldErrors[key]) {
+                    fieldErrors[key] = item.message.replace(/^"|"$/g, '')
+                }
+            }
             return res.status(400).json({
                 success: false,
                 message: 'Validation failed',
-                errors: details
+                errors: details,
+                fieldErrors,
             })
         }
 

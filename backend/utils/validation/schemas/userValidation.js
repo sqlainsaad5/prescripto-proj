@@ -1,5 +1,6 @@
 import Joi from 'joi'
 import { objectIdPattern } from '../validateRequest.js'
+import { contactUsSchema } from './contactValidation.js'
 
 const objectId = Joi.string().pattern(objectIdPattern)
 
@@ -52,13 +53,6 @@ const verifyStripeSchema = Joi.object({
     appointmentId: objectId.required(),
     success: Joi.string().valid('true', 'false').required(),
     session_id: Joi.string().trim().required()
-})
-
-const contactUsSchema = Joi.object({
-    name: Joi.string().trim().min(2).max(80).required(),
-    email: Joi.string().trim().lowercase().email().required(),
-    subject: Joi.string().trim().min(2).max(200).required(),
-    message: Joi.string().trim().min(2).required()
 })
 
 const followUpByTokenQuerySchema = Joi.object({

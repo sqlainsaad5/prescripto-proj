@@ -1,293 +1,110 @@
-import bcrypt from 'bcrypt'
-import jwt from 'jsonwebtoken'
-import userModel from '../models/userModel.js'
-import { v2 as cloudinary } from 'cloudinary'
-import doctorModel from '../models/doctorModel.js'
-import appointmentModel from '../models/appointmentModel.js'
-import labReportModel from '../models/labReportModel.js'
-import followUpInviteModel from '../models/followUpInviteModel.js'
-import Stripe from 'stripe'
-import { sendContactEmail } from '../services/emailService.js'
-import { isWithinJoinWindow, buildVideoJoinPayload } from '../utils/videoConsultation.js'
+import { registerUser as registerUserSvc, loginUser as loginUserSvc } from '../services/auth/userAuthService.js'
+import { getProfile as getProfileSvc, updateProfile as updateProfileSvc } from '../services/user/userProfileService.js'
+import {
+    bookAppointment as bookAppointmentSvc,
+    getUserVideoJoinDetails as getUserVideoJoinDetailsSvc,
+    listAppointment as listAppointmentSvc,
+    cancelAppointment as cancelAppointmentSvc,
+} from '../services/user/userAppointmentService.js'
+import { createCheckoutSession, verifyStripePayment } from '../services/user/userPaymentService.js'
+import { sendContactMessage } from '../services/user/userContactService.js'
+import {
+    uploadLabReport as uploadLabReportSvc,
+    getFollowUpByToken as getFollowUpByTokenSvc,
+    confirmFollowUp as confirmFollowUpSvc,
+} from '../services/user/userLabFollowUpService.js'
 
 const registerUser = async (req, res) => {
     try {
-        const { name, email, password } = req.body
-
-        //hashing user password
-        const salt = await bcrypt.genSalt(10)
-        const hashedPassword = await bcrypt.hash(password, salt)
-
-        const userData = {
-            name,
-            email,
-            password: hashedPassword
-        }
-
-        const newUser = new userModel(userData)
-        const user = await newUser.save()
-
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
-
-        res.json({ success: true, token })
-
-
-
+        const result = await registerUserSvc(req.body)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
-
     }
 }
 
-//API for user login
 const loginUser = async (req, res) => {
     try {
-        const { email, password } = req.body
-        const user = await userModel.findOne({ email })
-
-        if (!user) {
-            return res.json({ success: false, message: 'User does not Exist' })
-        }
-        const isMatch = await bcrypt.compare(password, user.password)
-
-        if (isMatch) {
-            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET)
-            res.json({ success: true, token })
-        } else {
-            res.json({ success: false, message: "Invalid Credentials" })
-        }
-
+        const result = await loginUserSvc(req.body)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
-//api to get user profile data
 
 const getProfile = async (req, res) => {
     try {
-        const userId = req.userId
-        const userData = await userModel.findById(userId).select('-password')
-
-        res.json({ success: true, userData })
-
+        const result = await getProfileSvc(req.userId)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
-
     }
 }
-//api to update user profile
+
 const updateProfile = async (req, res) => {
     try {
-
-        const userId = req.userId
         const { name, phone, address, dob, gender } = req.body
-        const imageFile = req.file
-        console.log("Image file path:", imageFile?.path)
-
-        // Profile updates from patients must not change health fields (allergies, chronicConditions, healthHistory); doctor-only via admin.
-        const updateData = { name, phone, address: typeof address === 'string' ? JSON.parse(address) : address, dob, gender }
-        await userModel.findByIdAndUpdate(userId, updateData)
-        if (imageFile) {
-            //upload image cloudinary
-            const imageUpload = await cloudinary.uploader.upload(imageFile.path, { resource_type: 'image' })
-            const image = imageUpload.secure_url
-            await userModel.findByIdAndUpdate(userId, { image }, { new: true })
-        }
-        res.json({ success: true, message: "Profile Updated" })
-
-
+        const result = await updateProfileSvc(req.userId, { name, phone, address, dob, gender }, req.file)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
-
     }
 }
 
-//api to book appointment
 const bookAppointment = async (req, res) => {
     try {
-        const { docId, slotDate, slotTime, consultationMode } = req.body
-        const userId = req.userId
-
-        const docData = await doctorModel.findById(docId).select('-password')
-
-        if (!docData.available) {
-            return res.json({ success: false, message: 'Doctor not available' })
-        }
-        let slots_booked = docData.slots_booked || {}
-
-
-        //checking for slot avaibility
-        const alreadyBooked = await appointmentModel.findOne({
-            docId,
-            slotDate,
-            slotTime,
-            cancelled: false
-        })
-
-        if (alreadyBooked) {
-            return res.json({ success: false, message: 'Slot already booked' })
-        }
-
-        if (slots_booked[slotDate]) {
-            if (slots_booked[slotDate].includes(slotTime)) {
-                return res.json({ success: false, message: 'slot not available' })
-
-            } else {
-                slots_booked[slotDate].push(slotTime)
-            }
-        } else {
-            slots_booked[slotDate] = []
-            slots_booked[slotDate].push(slotTime)
-        }
-
-        const userData = await userModel.findById(userId).select('-password')
-        delete docData.slots_booked
-
-        const appointmentData = {
-            userId,
-            docId,
-            userData,
-            docData,
-            amount: docData.fee,
-            slotTime,
-            slotDate,
-            date: Date.now(),
-            consultationMode: consultationMode === 'video' ? 'video' : 'in_person'
-        }
-        const newAppointment = new appointmentModel(appointmentData)
-        await newAppointment.save()
-
-        // save new slots data in docData
-
-        await doctorModel.findByIdAndUpdate(docId, { slots_booked })
-        res.json({ success: true, message: 'Appointment Booked' })
-
+        const result = await bookAppointmentSvc(req.userId, req.body)
+        res.json(result)
     } catch (error) {
         console.log(error)
-        if (error.code === 11000) {
-            // Duplicate key error from unique index on (docId, slotDate, slotTime)
-            return res.json({ success: false, message: 'Slot already booked' })
-        }
         res.json({ success: false, message: error.message })
-
     }
 }
 
 const getUserVideoJoinDetails = async (req, res) => {
     try {
-        const userId = req.userId
-        const { appointmentId } = req.params
-
-        const appointment = await appointmentModel.findById(appointmentId)
-        if (!appointment) {
-            return res.status(404).json({ success: false, message: 'Appointment not found' })
+        const result = await getUserVideoJoinDetailsSvc(req.userId, req.params.appointmentId)
+        if (!result.success) {
+            return res.status(result.status || 400).json({ success: false, message: result.message })
         }
-        if (String(appointment.userId) !== String(userId)) {
-            return res.status(403).json({ success: false, message: 'Unauthorized Action' })
-        }
-        if (appointment.cancelled || appointment.isCompleted) {
-            return res.status(400).json({ success: false, message: 'Appointment is not active for video call' })
-        }
-        if (appointment.consultationMode !== 'video') {
-            return res.status(400).json({ success: false, message: 'This appointment is not configured for video consultation' })
-        }
-        if (!appointment.videoRoomId || appointment.videoStatus !== 'live') {
-            return res.status(400).json({ success: false, message: 'Doctor has not started the call yet' })
-        }
-        if (!isWithinJoinWindow(appointment)) {
-            return res.status(400).json({ success: false, message: 'Video call can only be joined near appointment time' })
-        }
-
-        const session = buildVideoJoinPayload(appointment, 'patient')
-        return res.json({ success: true, session })
+        return res.json({ success: true, session: result.session })
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
-
-//API to get user appointments for frontend my-appointments page
 
 const listAppointment = async (req, res) => {
     try {
-        const userId = req.userId
-        const appointments = await appointmentModel.find({ userId })
-        res.json({ success: true, appointments })
+        const result = await listAppointmentSvc(req.userId)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
-//Api to cancel appointment
+
 const cancelAppointment = async (req, res) => {
     try {
         const { appointmentId } = req.body
-        const userId = req.userId  // Assuming userId is set from auth middleware
-
-        if (!userId) {
-            return res.json({ success: false, message: 'User not authenticated' })
-        }
-
-        const appointmentData = await appointmentModel.findById(appointmentId)
-
-        // verify appointment user
-        if (appointmentData.userId !== userId) {
-            return res.json({ success: false, message: 'Unauthorized Action' })
-        }
-
-        await appointmentModel.findByIdAndUpdate(appointmentId, { cancelled: true })
-        // releasing doctor slot
-        const { docId, slotDate, slotTime } = appointmentData
-        const doctorData = await doctorModel.findById(docId)
-        let slots_booked = doctorData.slots_booked
-        slots_booked[slotDate] = slots_booked[slotDate].filter(e => e !== slotTime)
-        await doctorModel.findByIdAndUpdate(docId, { slots_booked })
-        res.json({ success: true, message: 'Appointment Cancelled' })
-
-
+        const result = await cancelAppointmentSvc(req.userId, appointmentId)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
-
     }
 }
 
-// API to make payment of appointment using stripe
 const paymentStripe = async (req, res) => {
     try {
         const { appointmentId } = req.body
         const { origin } = req.headers
-
-        const appointmentData = await appointmentModel.findById(appointmentId)
-
-        if (!appointmentData || appointmentData.cancelled) {
-            return res.json({ success: false, message: 'Appointment cancelled or not found' })
-        }
-
-        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
-        const session = await stripe.checkout.sessions.create({
-            line_items: [{
-                price_data: {
-                    currency: process.env.CURRENCY,
-                    product_data: {
-                        name: "Appointment Fee"
-                    },
-                    unit_amount: appointmentData.amount * 100
-                },
-                quantity: 1
-            }],
-            mode: 'payment',
-            success_url: `${origin}/my-appointments?success=true&appointmentId=${appointmentData._id}&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${origin}/my-appointments?success=false&appointmentId=${appointmentData._id}`,
-        })
-
-        res.json({ success: true, session_url: session.url })
-
+        const result = await createCheckoutSession(appointmentId, origin)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
@@ -296,151 +113,83 @@ const paymentStripe = async (req, res) => {
 
 const verifyStripe = async (req, res) => {
     try {
-        const { appointmentId, success, session_id } = req.body
-
-        if (success === "true") {
-            const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-            const session = await stripe.checkout.sessions.retrieve(session_id)
-
-            if (session.payment_status === 'paid') {
-                await appointmentModel.findByIdAndUpdate(appointmentId, { payment: true })
-                return res.json({ success: true, message: "Payment Successful" })
-            }
-        }
-
-        res.json({ success: false, message: "Payment Failed" })
-
+        const result = await verifyStripePayment(req.body)
+        res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
-//API to verify payment from stripe
 
-// API to send contact form message
 const contactUs = async (req, res) => {
     try {
         const { name, email, subject, message } = req.body
-        console.log("Contact Request Received:", { name, email, subject });
-
-        await sendContactEmail(name, email, subject, message)
-
-        res.json({ success: true, message: "Message Sent Successfully" })
-
+        console.log('Contact Request Received:', { name, email, subject })
+        const result = await sendContactMessage({ name, email, subject, message })
+        res.json(result)
     } catch (error) {
-        console.log("Contact API Error:", error)
-        res.json({ success: false, message: error.message })
+        console.log('Contact API Error:', error)
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Could not send message. Please try again later.',
+        })
     }
 }
 
-// Upload lab report (X-ray, blood test, diagnostic) linked to an appointment
 const uploadLabReport = async (req, res) => {
     try {
-        const userId = req.userId
-        const { appointmentId, type } = req.body
-        const file = req.file
-
-        if (!file || !file.path) {
-            return res.status(400).json({ success: false, message: "No file uploaded" })
+        const result = await uploadLabReportSvc(req.userId, req.body, req.file)
+        if (!result.success) {
+            return res.status(result.status || 400).json({ success: false, message: result.message })
         }
-
-        const appointment = await appointmentModel.findById(appointmentId)
-        if (!appointment) {
-            return res.status(404).json({ success: false, message: "Appointment not found" })
-        }
-        if (String(appointment.userId) !== String(userId)) {
-            return res.status(403).json({ success: false, message: "Not authorized to upload for this appointment" })
-        }
-
-        const uploadResult = await cloudinary.uploader.upload(file.path, { resource_type: 'auto' })
-        const fileUrl = uploadResult.secure_url
-
-        const labReport = await labReportModel.create({
-            appointmentId,
-            patientId: appointment.userId,
-            type,
-            fileUrl,
-            fileName: file.originalname || ''
-        })
-
-        return res.json({ success: true, labReport })
+        return res.json({ success: true, labReport: result.labReport })
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-// GET follow-up offer by token (no auth) – for priority booking link
 const getFollowUpByToken = async (req, res) => {
     try {
         const { token } = req.query
-        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
-        if (!invite) {
-            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        const result = await getFollowUpByTokenSvc(token)
+        if (!result.success) {
+            return res.status(result.status || 404).json({ success: false, message: result.message })
         }
-        const docData = await doctorModel.findById(invite.docId).select('-password')
-        if (!docData) {
-            return res.status(404).json({ success: false, message: 'Doctor not found' })
-        }
-        const docDataObj = docData.toObject ? docData.toObject() : docData
-        delete docDataObj.slots_booked
-        return res.json({
-            success: true,
-            docId: invite.docId,
-            slotDate: invite.slotDate,
-            slotTime: invite.slotTime,
-            docData: docDataObj,
-            patientId: invite.patientId.toString()
-        })
+        return res.json(result)
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-// POST confirm follow-up (authUser) – create appointment without updating slots_booked
 const confirmFollowUp = async (req, res) => {
     try {
-        const userId = req.userId
         const { token } = req.body
-        const invite = await followUpInviteModel.findOne({ token, status: 'pending' })
-        if (!invite) {
-            return res.status(404).json({ success: false, message: 'Invalid or expired link' })
+        const result = await confirmFollowUpSvc(req.userId, token)
+        if (!result.success) {
+            return res.status(result.status || 400).json({ success: false, message: result.message })
         }
-        if (invite.patientId.toString() !== userId) {
-            return res.status(403).json({ success: false, message: 'This link is for another patient' })
-        }
-
-        const { docId, slotDate, slotTime } = invite
-        const userData = await userModel.findById(userId).select('-password')
-        const docData = await doctorModel.findById(docId).select('-password')
-        if (!userData || !docData) {
-            return res.status(404).json({ success: false, message: 'User or doctor not found' })
-        }
-        delete docData.slots_booked
-
-        const sourceAppointment = await appointmentModel.findById(invite.sourceAppointmentId).select('consultationMode')
-        const consultationMode = sourceAppointment?.consultationMode === 'video' ? 'video' : 'in_person'
-
-        const appointmentData = {
-            userId,
-            docId,
-            userData,
-            docData,
-            amount: docData.fee,
-            slotTime,
-            slotDate,
-            date: Date.now(),
-            consultationMode
-        }
-        const newAppointment = new appointmentModel(appointmentData)
-        await newAppointment.save()
-        await followUpInviteModel.findByIdAndUpdate(invite._id, { status: 'completed' })
-        return res.json({ success: true, message: 'Follow-up appointment confirmed' })
+        return res.json({ success: true, message: result.message })
     } catch (error) {
         console.log(error)
         res.json({ success: false, message: error.message })
     }
 }
 
-export { registerUser, loginUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentStripe, verifyStripe, contactUs, uploadLabReport, getFollowUpByToken, confirmFollowUp, getUserVideoJoinDetails }
+export {
+    registerUser,
+    loginUser,
+    getProfile,
+    updateProfile,
+    bookAppointment,
+    listAppointment,
+    cancelAppointment,
+    paymentStripe,
+    verifyStripe,
+    contactUs,
+    uploadLabReport,
+    getFollowUpByToken,
+    confirmFollowUp,
+    getUserVideoJoinDetails,
+}

@@ -58,5 +58,5 @@ const sendEmail = async (to, subject, text) => {
         throw new Error(error.message)
     }
 }
-
 export { sendContactEmail, sendEmail }
+

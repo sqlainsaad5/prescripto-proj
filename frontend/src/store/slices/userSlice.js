@@ -63,11 +63,26 @@ export const contactUs = createAsyncThunk('user/contactUs', async (formData, { r
             return data.message;
         } else {
             toast.error(data.message);
-            return rejectWithValue(data.message);
+            return rejectWithValue({
+                message: data.message,
+                fieldErrors: data.fieldErrors,
+                errors: data.errors,
+            });
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const res = error?.response?.data;
+        const message = res?.message || error.message;
+        const firstDetail = res?.errors?.[0];
+        if (firstDetail) {
+            toast.error(firstDetail);
+        } else {
+            toast.error(message);
+        }
+        return rejectWithValue({
+            message,
+            fieldErrors: res?.fieldErrors || {},
+            errors: res?.errors,
+        });
     }
 });
 
