@@ -1,12 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { toast } from 'react-toastify';
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { apiClient } from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const getDoctorsData = createAsyncThunk('doctors/getDoctorsData', async (_, { rejectWithValue }) => {
     try {
-        const { data } = await axios.get(backendUrl + '/api/doctor/list');
+        const { data } = await apiClient.get('/api/doctor/list');
         if (data.success) {
             return data.doctors;
         } else {
@@ -14,8 +13,9 @@ export const getDoctorsData = createAsyncThunk('doctors/getDoctorsData', async (
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 

@@ -6,7 +6,7 @@ import Login from './pages/Login'
 import About from './pages/About'
 import Contact from './pages/Contact'
 import MyProfile from './pages/MyProfile'
-import MyAppoinments from './pages/MyAppoinments'
+import MyAppointments from './pages/MyAppoinments'
 import MyPrescriptions from './pages/MyPrescriptions'
 import Appointment from './pages/Appointment'
 import FollowUpBook from './pages/FollowUpBook'
@@ -25,7 +25,7 @@ const App = () => {
         <Route path='/about' element={<About />} />
         <Route path='/contact' element={<Contact />} />
         <Route path='/my-profile' element={<MyProfile />} />
-        <Route path='/my-appointments' element={<MyAppoinments />} />
+        <Route path='/my-appointments' element={<MyAppointments />} />
         <Route path='/my-prescriptions' element={<MyPrescriptions />} />
         <Route path='/appointment/:docId' element={<Appointment />} />
         <Route path='/follow-up-book' element={<FollowUpBook />} />

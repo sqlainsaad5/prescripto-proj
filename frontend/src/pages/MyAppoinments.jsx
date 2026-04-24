@@ -12,7 +12,7 @@ import {
 import LabReportUpload from '../components/LabReportUpload'
 import AppointmentCard from '../components/appointments/AppointmentCard'
 
-const MyAppoinments = () => {
+const MyAppointments = () => {
   const { token, appointments } = useSelector((state) => state.user)
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -80,9 +80,9 @@ const MyAppoinments = () => {
           </div>
         ) : (
           <div>
-            {appointments.map((item, index) => (
+            {appointments.map((item) => (
               <AppointmentCard
-                key={index}
+                key={item._id}
                 item={item}
                 onPayOnline={() => dispatch(startAppointmentStripe(item._id))}
                 onJoinVideo={() => dispatch(joinVideoConsultation(item._id))}
@@ -108,4 +108,4 @@ const MyAppoinments = () => {
   )
 }
 
-export default MyAppoinments
+export default MyAppointments

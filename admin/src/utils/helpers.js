@@ -1,9 +1,16 @@
 export const calculateAge = (dob) => {
+    if (!dob) return 0
     const today = new Date()
     const birthDate = new Date(dob)
+    if (Number.isNaN(birthDate.getTime())) return 0
 
     let age = today.getFullYear() - birthDate.getFullYear()
-    return age
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    const dayDiff = today.getDate() - birthDate.getDate()
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+        age -= 1
+    }
+    return Math.max(age, 0)
 }
 
 export const slotDateFormat = (slotDate) => {

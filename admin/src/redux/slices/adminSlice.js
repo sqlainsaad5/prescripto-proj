@@ -1,12 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { toast } from 'react-toastify';
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { apiClient } from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const loginAdmin = createAsyncThunk('admin/login', async ({ email, password }, { rejectWithValue }) => {
     try {
-        const { data } = await axios.post(backendUrl + '/api/admin/login', { email, password });
+        const { data } = await apiClient.post('/api/admin/login', { email, password });
         if (data.success) {
             localStorage.setItem('aToken', data.token);
             return data.token;
@@ -15,15 +14,16 @@ export const loginAdmin = createAsyncThunk('admin/login', async ({ email, passwo
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const getAllDoctors = createAsyncThunk('admin/getAllDoctors', async (_, { getState, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.post(backendUrl + '/api/admin/all-doctors', {}, { headers: { aToken } });
+        const { data } = await apiClient.post('/api/admin/all-doctors', {}, { headers: { aToken } });
         if (data.success) {
             return data.doctors;
         } else {
@@ -31,15 +31,16 @@ export const getAllDoctors = createAsyncThunk('admin/getAllDoctors', async (_, {
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const changeAvailability = createAsyncThunk('admin/changeAvailability', async (docId, { getState, dispatch, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.post(backendUrl + '/api/admin/change-availability', { docId }, { headers: { aToken } });
+        const { data } = await apiClient.post('/api/admin/change-availability', { docId }, { headers: { aToken } });
         if (data.success) {
             toast.success(data.message);
             dispatch(getAllDoctors());
@@ -49,15 +50,16 @@ export const changeAvailability = createAsyncThunk('admin/changeAvailability', a
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const getAllAppointments = createAsyncThunk('admin/getAllAppointments', async (_, { getState, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.get(backendUrl + '/api/admin/appointments', { headers: { aToken } });
+        const { data } = await apiClient.get('/api/admin/appointments', { headers: { aToken } });
         if (data.success) {
             return data.appointments;
         } else {
@@ -65,15 +67,16 @@ export const getAllAppointments = createAsyncThunk('admin/getAllAppointments', a
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const cancelAppointment = createAsyncThunk('admin/cancelAppointment', async (appointmentId, { getState, dispatch, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.post(backendUrl + '/api/admin/appointment-cancel', { appointmentId }, { headers: { aToken } });
+        const { data } = await apiClient.post('/api/admin/appointment-cancel', { appointmentId }, { headers: { aToken } });
         if (data.success) {
             toast.success(data.message);
             dispatch(getAllAppointments());
@@ -83,15 +86,16 @@ export const cancelAppointment = createAsyncThunk('admin/cancelAppointment', asy
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const getDashData = createAsyncThunk('admin/getDashData', async (_, { getState, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.get(backendUrl + '/api/admin/dashboard', { headers: { aToken } });
+        const { data } = await apiClient.get('/api/admin/dashboard', { headers: { aToken } });
         if (data.success) {
             return data.dashData;
         } else {
@@ -99,15 +103,16 @@ export const getDashData = createAsyncThunk('admin/getDashData', async (_, { get
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const addDoctor = createAsyncThunk('admin/addDoctor', async (formData, { getState, rejectWithValue }) => {
     try {
         const { aToken } = getState().admin;
-        const { data } = await axios.post(backendUrl + "/api/admin/add-doctor", formData, { headers: { aToken } });
+        const { data } = await apiClient.post("/api/admin/add-doctor", formData, { headers: { aToken } });
         if (data.success) {
             toast.success(data.message);
             return true;
@@ -116,8 +121,9 @@ export const addDoctor = createAsyncThunk('admin/addDoctor', async (formData, { 
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 

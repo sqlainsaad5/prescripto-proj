@@ -1,13 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getDoctorsData } from './doctorSlice';
-
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+import { apiClient } from '../../api/client';
+import { getApiErrorMessage } from '../../utils/apiError';
 
 export const registerUser = createAsyncThunk('user/register', async ({ name, email, password }, { dispatch, rejectWithValue }) => {
     try {
-        const { data } = await axios.post(backendUrl + "/api/user/register", { name, email, password });
+        const { data } = await apiClient.post("/api/user/register", { name, email, password });
         if (data.success) {
             localStorage.setItem("token", data.token);
             dispatch(setToken(data.token));
@@ -17,14 +16,15 @@ export const registerUser = createAsyncThunk('user/register', async ({ name, ema
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const loginUser = createAsyncThunk('user/login', async ({ email, password }, { dispatch, rejectWithValue }) => {
     try {
-        const { data } = await axios.post(backendUrl + "/api/user/login", { email, password });
+        const { data } = await apiClient.post("/api/user/login", { email, password });
         if (data.success) {
             localStorage.setItem("token", data.token);
             dispatch(setToken(data.token));
@@ -34,15 +34,16 @@ export const loginUser = createAsyncThunk('user/login', async ({ email, password
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const loadUserProfileData = createAsyncThunk('user/loadProfile', async (_, { getState, rejectWithValue }) => {
     try {
         const { token } = getState().user;
-        const { data } = await axios.get(backendUrl + '/api/user/get-profile', { headers: { token } });
+        const { data } = await apiClient.get('/api/user/get-profile', { headers: { token } });
         if (data.success) {
             return data.userData;
         } else {
@@ -50,14 +51,15 @@ export const loadUserProfileData = createAsyncThunk('user/loadProfile', async (_
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error.message);
-        return rejectWithValue(error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
 export const contactUs = createAsyncThunk('user/contactUs', async (formData, { rejectWithValue }) => {
     try {
-        const { data } = await axios.post(backendUrl + "/api/user/contact-us", formData);
+        const { data } = await apiClient.post("/api/user/contact-us", formData);
         if (data.success) {
             toast.success(data.message);
             return data.message;
@@ -71,7 +73,7 @@ export const contactUs = createAsyncThunk('user/contactUs', async (formData, { r
         }
     } catch (error) {
         const res = error?.response?.data;
-        const message = res?.message || error.message;
+        const message = res?.message || getApiErrorMessage(error);
         const firstDetail = res?.errors?.[0];
         if (firstDetail) {
             toast.error(firstDetail);
@@ -92,7 +94,7 @@ export const getMyPrescriptions = createAsyncThunk('user/getMyPrescriptions', as
         if (!token || !userData?._id) {
             return rejectWithValue('Not logged in');
         }
-        const { data } = await axios.get(backendUrl + '/api/prescription/patient/' + userData._id, { headers: { token } });
+        const { data } = await apiClient.get('/api/prescription/patient/' + userData._id, { headers: { token } });
         if (data.success) {
             return data.prescriptions;
         } else {
@@ -100,8 +102,9 @@ export const getMyPrescriptions = createAsyncThunk('user/getMyPrescriptions', as
             return rejectWithValue(data.message);
         }
     } catch (error) {
-        toast.error(error?.response?.data?.message || error.message);
-        return rejectWithValue(error?.response?.data?.message || error.message);
+        const message = getApiErrorMessage(error);
+        toast.error(message);
+        return rejectWithValue(message);
     }
 });
 
@@ -110,13 +113,13 @@ export const getFollowUpByToken = createAsyncThunk(
     'user/getFollowUpByToken',
     async (token, { rejectWithValue }) => {
         try {
-            const { data } = await axios.get(backendUrl + '/api/user/follow-up-by-token?token=' + encodeURIComponent(token));
+            const { data } = await apiClient.get('/api/user/follow-up-by-token?token=' + encodeURIComponent(token));
             if (data.success) {
                 return data;
             }
             return rejectWithValue(data.message || 'Invalid or expired link');
         } catch (error) {
-            const msg = error?.response?.data?.message || error.message;
+            const msg = getApiErrorMessage(error);
             return rejectWithValue(msg);
         }
     }
@@ -132,8 +135,8 @@ export const confirmFollowUp = createAsyncThunk(
                 toast.warn('Login to confirm this follow-up');
                 return rejectWithValue('Not authenticated');
             }
-            const { data } = await axios.post(
-                backendUrl + '/api/user/confirm-follow-up',
+            const { data } = await apiClient.post(
+                '/api/user/confirm-follow-up',
                 { token },
                 { headers: { token: authToken } }
             );
@@ -144,7 +147,7 @@ export const confirmFollowUp = createAsyncThunk(
             toast.error(data.message);
             return rejectWithValue(data.message);
         } catch (error) {
-            const msg = error?.response?.data?.message || error.message;
+            const msg = getApiErrorMessage(error);
             toast.error(msg);
             return rejectWithValue(msg);
         }
@@ -162,8 +165,8 @@ export const bookAppointment = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/book-appointment',
+            const { data } = await apiClient.post(
+                '/api/user/book-appointment',
                 { docId, slotDate, slotTime, consultationMode },
                 { headers: { token } }
             );
@@ -179,8 +182,9 @@ export const bookAppointment = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -195,8 +199,8 @@ export const fetchUserAppointments = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.get(
-                backendUrl + '/api/user/appointments',
+            const { data } = await apiClient.get(
+                '/api/user/appointments',
                 { headers: { token } }
             );
 
@@ -207,8 +211,9 @@ export const fetchUserAppointments = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -223,8 +228,8 @@ export const cancelAppointmentThunk = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/cancel-appointment',
+            const { data } = await apiClient.post(
+                '/api/user/cancel-appointment',
                 { appointmentId },
                 { headers: { token } }
             );
@@ -240,8 +245,9 @@ export const cancelAppointmentThunk = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -256,8 +262,8 @@ export const startAppointmentStripe = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/payment-stripe',
+            const { data } = await apiClient.post(
+                '/api/user/payment-stripe',
                 { appointmentId },
                 { headers: { token } }
             );
@@ -271,8 +277,9 @@ export const startAppointmentStripe = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -287,8 +294,8 @@ export const verifyStripePayment = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/verifyStripe',
+            const { data } = await apiClient.post(
+                '/api/user/verifyStripe',
                 { appointmentId, success, session_id },
                 { headers: { token } }
             );
@@ -305,8 +312,9 @@ export const verifyStripePayment = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -332,8 +340,8 @@ export const updateUserProfile = createAsyncThunk(
                 formData.append('image', image);
             }
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/update-profile',
+            const { data } = await apiClient.post(
+                '/api/user/update-profile',
                 formData,
                 { headers: { token } }
             );
@@ -347,8 +355,9 @@ export const updateUserProfile = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            toast.error(error.message);
-            return rejectWithValue(error.message);
+            const message = getApiErrorMessage(error);
+            toast.error(message);
+            return rejectWithValue(message);
         }
     }
 );
@@ -367,8 +376,8 @@ export const uploadLabReport = createAsyncThunk(
             formData.append('type', type);
             formData.append('file', file);
 
-            const { data } = await axios.post(
-                backendUrl + '/api/user/upload-lab-report',
+            const { data } = await apiClient.post(
+                '/api/user/upload-lab-report',
                 formData,
                 { headers: { token } }
             );
@@ -382,7 +391,7 @@ export const uploadLabReport = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            const message = error?.response?.data?.message || error.message;
+            const message = getApiErrorMessage(error);
             toast.error(message);
             return rejectWithValue(message);
         }
@@ -398,8 +407,8 @@ export const joinVideoConsultation = createAsyncThunk(
                 return rejectWithValue('Not authenticated');
             }
 
-            const { data } = await axios.get(
-                backendUrl + '/api/user/video-session/' + appointmentId,
+            const { data } = await apiClient.get(
+                '/api/user/video-session/' + appointmentId,
                 { headers: { token } }
             );
 
@@ -415,7 +424,7 @@ export const joinVideoConsultation = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
         } catch (error) {
-            const message = error?.response?.data?.message || error.message;
+            const message = getApiErrorMessage(error);
             toast.error(message);
             return rejectWithValue(message);
         }
