@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import { createPrescription } from '../store/slices/doctorSlice';
+import { createPrescription } from '../redux/slices/doctorSlice';
 
 const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
     const dispatch = useDispatch();
@@ -49,13 +49,14 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
 
     return (
         <div className="bg-white px-8 py-8 border rounded w-full max-w-2xl max-h-[90vh] overflow-y-auto border-gray-300">
-            <p className="mb-4 text-lg font-medium text-gray-700">
+            <h2 className="mb-4 text-lg font-medium text-gray-700">
                 Prescription for {appointment.userData?.name || 'Patient'}
-            </p>
+            </h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-1">
-                    <p className="text-gray-600 text-sm">Diagnosis / Consultation notes (optional)</p>
+                    <label htmlFor="prescription-notes" className="text-gray-600 text-sm">Diagnosis / Consultation notes (optional)</label>
                     <textarea
+                        id="prescription-notes"
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -78,8 +79,9 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
                             )}
                         </div>
                         <div className="flex flex-col gap-1">
-                            <p className="text-gray-600 text-sm">Medicine Name</p>
+                            <label htmlFor={`medicine-name-${index}`} className="text-gray-600 text-sm">Medicine Name</label>
                             <input
+                                id={`medicine-name-${index}`}
                                 value={med.medicineName}
                                 onChange={(e) => updateMedicine(index, 'medicineName', e.target.value)}
                                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -89,8 +91,9 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             <div className="flex flex-col gap-1">
-                                <p className="text-gray-600 text-sm">Dosage</p>
+                                <label htmlFor={`medicine-dosage-${index}`} className="text-gray-600 text-sm">Dosage</label>
                                 <input
+                                    id={`medicine-dosage-${index}`}
                                     value={med.dosage}
                                     onChange={(e) => updateMedicine(index, 'dosage', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -99,8 +102,9 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
-                                <p className="text-gray-600 text-sm">Duration</p>
+                                <label htmlFor={`medicine-duration-${index}`} className="text-gray-600 text-sm">Duration</label>
                                 <input
+                                    id={`medicine-duration-${index}`}
                                     value={med.duration}
                                     onChange={(e) => updateMedicine(index, 'duration', e.target.value)}
                                     className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -110,8 +114,9 @@ const PrescriptionForm = ({ appointment, onSubmitSuccess, onCancel }) => {
                             </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                            <p className="text-gray-600 text-sm">Special Instructions / Notes</p>
+                            <label htmlFor={`medicine-instructions-${index}`} className="text-gray-600 text-sm">Special Instructions / Notes</label>
                             <textarea
+                                id={`medicine-instructions-${index}`}
                                 value={med.instructions}
                                 onChange={(e) => updateMedicine(index, 'instructions', e.target.value)}
                                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"

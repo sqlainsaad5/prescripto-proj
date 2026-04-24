@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { getPatientHistory, updatePatientHealth } from '../store/slices/doctorSlice';
+import { getPatientHistory, updatePatientHealth } from '../redux/slices/doctorSlice';
+import HistorySectionTitle from './doctor/HistorySectionTitle';
 
 const formatDate = (d) => {
     if (!d) return '—';
@@ -46,9 +47,9 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white border rounded w-full max-w-2xl max-h-[90vh] overflow-y-auto border-gray-300 flex flex-col">
                 <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
-                    <p className="text-lg font-medium text-gray-700">
+                    <h2 className="text-lg font-medium text-gray-700">
                         Patient History – {patientName || 'Patient'}
-                    </p>
+                    </h2>
                     <button
                         type="button"
                         onClick={onClose}
@@ -69,7 +70,7 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
                             {/* Allergies & Chronic conditions – doctor can edit */}
                             <div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <p className="text-xs font-semibold tracking-wide text-gray-500">ALLERGIES / CHRONIC CONDITIONS</p>
+                                    <HistorySectionTitle>ALLERGIES / CHRONIC CONDITIONS</HistorySectionTitle>
                                     {!isEditingHealth ? (
                                         <button
                                             type="button"
@@ -86,7 +87,7 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
                                 </div>
                                 {!isEditingHealth ? (
                                     <>
-                                        <p className="text-xs text-gray-500 mb-1">Allergies</p>
+                                        <h4 className="text-xs text-gray-500 mb-1">Allergies</h4>
                                         {data.patient?.allergies?.length > 0 ? (
                                             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1 mb-3">
                                                 {data.patient.allergies.map((a, i) => (
@@ -96,7 +97,7 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
                                         ) : (
                                             <p className="text-sm text-gray-500 mb-3">None recorded</p>
                                         )}
-                                        <p className="text-xs text-gray-500 mb-1">Chronic conditions</p>
+                                        <h4 className="text-xs text-gray-500 mb-1">Chronic conditions</h4>
                                         {data.patient?.chronicConditions?.length > 0 ? (
                                             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
                                                 {data.patient.chronicConditions.map((c, i) => (
@@ -167,12 +168,12 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
 
                             {/* Health history (previous diagnosis notes) */}
                             <div>
-                                <p className="text-xs font-semibold tracking-wide text-gray-500 mb-2">HEALTH HISTORY / PREVIOUS DIAGNOSIS</p>
+                                <HistorySectionTitle className="mb-2">HEALTH HISTORY / PREVIOUS DIAGNOSIS</HistorySectionTitle>
                                 {data.patient?.healthHistory?.length > 0 ? (
                                     <div className="space-y-3">
                                         {data.patient.healthHistory.map((h, i) => (
                                             <div key={i} className="border border-gray-200 rounded p-3 text-sm text-gray-700">
-                                                <p className="text-gray-500 text-xs mb-1">{formatDate(h.date)}</p>
+                                                <span className="text-gray-500 text-xs mb-1 block">{formatDate(h.date)}</span>
                                                 <p>{h.note || '—'}</p>
                                                 {h.fileUrl && (
                                                     <a href={h.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary text-xs mt-1 inline-block">
@@ -189,12 +190,12 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
 
                             {/* Past prescriptions */}
                             <div>
-                                <p className="text-xs font-semibold tracking-wide text-gray-500 mb-2">PAST PRESCRIPTIONS</p>
+                                <HistorySectionTitle className="mb-2">PAST PRESCRIPTIONS</HistorySectionTitle>
                                 {data.prescriptions?.length > 0 ? (
                                     <div className="space-y-3">
                                         {data.prescriptions.map((rx) => (
                                             <div key={rx._id} className="border border-gray-200 rounded p-3 text-sm text-gray-700">
-                                                <p className="text-gray-500 text-xs mb-2">{formatDate(rx.prescriptionDate)}</p>
+                                                <span className="text-gray-500 text-xs mb-2 block">{formatDate(rx.prescriptionDate)}</span>
                                                 {rx.notes && (
                                                     <p className="text-gray-600 mb-2 italic">{rx.notes}</p>
                                                 )}
@@ -216,15 +217,15 @@ const PatientHistoryModal = ({ patientId, patientName, onClose }) => {
 
                             {/* Lab reports */}
                             <div>
-                                <p className="text-xs font-semibold tracking-wide text-gray-500 mb-2">LAB REPORTS</p>
+                                <HistorySectionTitle className="mb-2">LAB REPORTS</HistorySectionTitle>
                                 {data.labReports?.length > 0 ? (
                                     <div className="space-y-3">
                                         {data.labReports.map((report) => (
                                             <div key={report._id} className="border border-gray-200 rounded p-3 text-sm text-gray-700 flex flex-wrap items-center justify-between gap-2">
                                                 <div>
-                                                    <p className="font-medium">{labReportTypeLabel(report.type)}</p>
-                                                    <p className="text-gray-500 text-xs">{formatDate(report.uploadedAt)}</p>
-                                                    {report.fileName && <p className="text-gray-500 text-xs truncate max-w-xs">{report.fileName}</p>}
+                                                    <h4 className="font-medium">{labReportTypeLabel(report.type)}</h4>
+                                                    <span className="text-gray-500 text-xs block">{formatDate(report.uploadedAt)}</span>
+                                                    {report.fileName && <span className="text-gray-500 text-xs truncate max-w-xs block">{report.fileName}</span>}
                                                 </div>
                                                 <a href={report.fileUrl} target="_blank" rel="noopener noreferrer" className="text-primary border border-primary px-2 py-1 rounded text-xs font-medium hover:bg-primary hover:text-white transition-colors shrink-0">
                                                     View

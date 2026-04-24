@@ -1,10 +1,15 @@
 import React, { useState } from "react";
-import { assets } from "../../assets/assets";
+import { assets } from "../../data/assets";
 import { useNavigate, NavLink } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../store/slices/userSlice";
+import { useDoctorsLoader } from "../../hooks/useDoctorsLoader";
+import { useSessionUserProfile } from "../../hooks/useSessionUserProfile";
 
 const Navbar = () => {
+  useDoctorsLoader();
+  useSessionUserProfile();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -32,15 +37,15 @@ const Navbar = () => {
           <hr className="border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden" />
         </NavLink>
         <NavLink to="/doctors">
-          <li className="py-1">All DOCTORS</li>
+          <li className="py-1">All Doctors</li>
           <hr className="border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden" />
         </NavLink>
         <NavLink to="/about">
-          <li className="py-1">ABOUT</li>
+          <li className="py-1">About</li>
           <hr className="border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden" />
         </NavLink>
         <NavLink to="/contact">
-          <li className="py-1">CONTACT</li>
+          <li className="py-1">Contact</li>
           <hr className="border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden" />
         </NavLink>
       </ul>
@@ -53,31 +58,35 @@ const Navbar = () => {
                 <img className="w-2.5" src={assets.dropdown_icon} alt="" />
                 <div className="absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block ">
                   <div className="min-w-48 bg-stone-100 rounded flex flex-col gap-4 p-4">
-                    <p
+                    <button
+                      type="button"
                       onClick={() => navigate("my-profile")}
                       className="hover:text-black cursor-pointer"
 
                     >
                       My Profile
-                    </p>
-                    <p
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => navigate("my-appointments")}
                       className="hover:text-black cursor-pointer"
                     >
                       My Appointment
-                    </p>
-                    <p
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => navigate("my-prescriptions")}
                       className="hover:text-black cursor-pointer"
                     >
                       My Prescriptions
-                    </p>
-                    <p
+                    </button>
+                    <button
+                      type="button"
                       onClick={handleLogout}
                       className="hover:text-black cursor-pointer"
                     >
                       Logout
-                    </p>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -106,10 +115,10 @@ const Navbar = () => {
             />
           </div>
           <ul className="flex flex-col items-center gap-2 mt-5 px-5 text-lg font-medium">
-            <NavLink onClick={() => setShowMenu(false)} to='/'><p className="px-4 py-2 rounded inline-block">Home</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/doctors'><p className="px-4 py-2 rounded inline-block">All DOCTORS</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/about'><p className="px-4 py-2 rounded inline-block">ABOUT</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/contact'><p className="px-4 py-2 rounded inline-block">CONTACT</p></NavLink>
+            <NavLink onClick={() => setShowMenu(false)} to='/'><li className="px-4 py-2 rounded inline-block">Home</li></NavLink>
+            <NavLink onClick={() => setShowMenu(false)} to='/doctors'><li className="px-4 py-2 rounded inline-block">All DOCTORS</li></NavLink>
+            <NavLink onClick={() => setShowMenu(false)} to='/about'><li className="px-4 py-2 rounded inline-block">ABOUT</li></NavLink>
+            <NavLink onClick={() => setShowMenu(false)} to='/contact'><li className="px-4 py-2 rounded inline-block">CONTACT</li></NavLink>
           </ul>
         </div>
       </div>

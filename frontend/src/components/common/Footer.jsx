@@ -1,5 +1,5 @@
 import React from "react";
-import { assets } from "../../assets/assets";
+import { assets } from "../../data/assets";
 
 const Footer = () => {
   return (
@@ -17,7 +17,7 @@ const Footer = () => {
         </div>
         {/* center section */}
         <div>
-          <p className="text-xl font-medium mb-5">COMPANY</p>
+          <h2 className="text-xl font-medium mb-5">COMPANY</h2>
           <ul className="flex flex-col gap-2 text-gray-600">
             <li>Home </li>
             <li>About Us </li>
@@ -27,7 +27,7 @@ const Footer = () => {
         </div>
         {/* right section */}
         <div>
-          <p className="text-xl font-medium mb-5">GET IN TOUCH</p>
+          <h2 className="text-xl font-medium mb-5">GET IN TOUCH</h2>
           <ul className="flex flex-col gap-2 text-gray-600">
             <li>+0-000-000-000</li>
             <li>greatstackdev@gmail.com</li>

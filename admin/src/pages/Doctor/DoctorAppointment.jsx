@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { assets } from '../../assets/assets'
+import { assets } from '../../data/assets'
 import { useSelector, useDispatch } from 'react-redux'
-import { getDoctorAppointments, getDoctorProfile, completeAppointment, cancelDoctorAppointment, startVideoConsultation, joinDoctorVideoConsultation, endVideoConsultation } from '../../store/slices/doctorSlice'
+import { getDoctorAppointments, getDoctorProfile, completeAppointment, cancelDoctorAppointment, startVideoConsultation, joinDoctorVideoConsultation, endVideoConsultation } from '../../redux/slices/doctorSlice'
 import { calculateAge, slotDateFormat } from '../../utils/helpers'
 import PrescriptionForm from '../../components/PrescriptionForm'
 import PatientHistoryModal from '../../components/PatientHistoryModal'
 import FollowUpModal from '../../components/FollowUpModal'
+import AppointmentActionCell from '../../components/doctor/AppointmentActionCell'
 
 // Action column buttons: stay inside table cells (table-fixed + narrow col needs w-full + min-w-0)
 const btnPrescription =
@@ -31,106 +32,9 @@ const DoctorAppointments = () => {
         }
     }, [dToken, dispatch])
 
-    const actionCell = (item) => {
-        if (item.cancelled) {
-            return (
-                <div className='flex w-full min-w-0 flex-col gap-2'>
-                    <p className='text-red-400 text-xs font-medium'>Cancelled</p>
-                    <button
-                        type="button"
-                        onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                        className={btnHistory}
-                    >
-                        View History
-                    </button>
-                </div>
-            )
-        }
-        if (item.isCompleted) {
-            return (
-                <div className='flex w-full min-w-0 flex-col gap-2'>
-                    <p className='text-green-500 text-xs font-medium'>Completed</p>
-                    <button
-                        type="button"
-                        onClick={() => { setSelectedAppointment(item); setShowPrescriptionForm(true); }}
-                        className={btnPrescription}
-                    >
-                        Generate Prescription
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setAppointmentForFollowUp(item)}
-                        className={btnFollowUp}
-                    >
-                        Follow-up
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                        className={btnHistory}
-                    >
-                        View History
-                    </button>
-                </div>
-            )
-        }
-        return (
-            <div className='flex w-full min-w-0 flex-col gap-2'>
-                <div className='flex'>
-                    <img onClick={() => dispatch(cancelDoctorAppointment(item._id))} className='w-10 cursor-pointer' src={assets.cancel_icon} alt="" />
-                    <img onClick={() => dispatch(completeAppointment(item._id))} className='w-10 cursor-pointer' src={assets.tick_icon} alt="" />
-                </div>
-                {item.consultationMode === 'video' && (
-                    <>
-                        {item.videoStatus === 'live' ? (
-                            <button
-                                type="button"
-                                onClick={() => dispatch(joinDoctorVideoConsultation(item._id))}
-                                className='w-full min-w-0 text-xs text-indigo-600 border border-indigo-500 px-2 py-1.5 rounded-md text-center hover:bg-indigo-50 transition-colors'
-                            >
-                                Join Call
-                            </button>
-                        ) : (
-                            <button
-                                type="button"
-                                onClick={() => dispatch(startVideoConsultation(item._id))}
-                                className='w-full min-w-0 text-xs text-indigo-600 border border-indigo-500 px-2 py-1.5 rounded-md text-center hover:bg-indigo-50 transition-colors'
-                            >
-                                Start Call
-                            </button>
-                        )}
-                        {item.videoStatus === 'live' && (
-                            <button
-                                type="button"
-                                onClick={() => dispatch(endVideoConsultation(item._id))}
-                                className='w-full min-w-0 text-xs text-red-500 border border-red-500 px-2 py-1.5 rounded-md text-center hover:bg-red-50 transition-colors'
-                            >
-                                End Call
-                            </button>
-                        )}
-                    </>
-                )}
-                <button
-                    type="button"
-                    onClick={() => setAppointmentForFollowUp(item)}
-                    className={btnFollowUp}
-                >
-                    Follow-up
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
-                    className={btnHistory}
-                >
-                    View History
-                </button>
-            </div>
-        )
-    }
-
     return (
         <div className='w-full max-w-6xl m-5'>
-            <p className='mb-3 text-lg font-medium'> All Appointments</p>
+            <h2 className='mb-3 text-lg font-medium'> All Appointments</h2>
             <div className='bg-white border rounded text-sm max-h-[80vh] min-h-[50vh] overflow-y-scroll overflow-x-auto'>
                 <table className='w-full min-w-[640px] table-fixed border-collapse'>
                     <colgroup>
@@ -182,7 +86,22 @@ const DoctorAppointments = () => {
                                 <td className='max-sm:hidden py-3 px-6 align-middle'>{calculateAge(item.userData.dob)}</td>
                                 <td className='py-3 px-6 align-middle'>{slotDateFormat(item.slotDate)},{item.slotTime}</td>
                                 <td className='py-3 px-6 align-middle'>{currency}{item.amount}</td>
-                                <td className='min-w-0 py-3 px-3 sm:px-4 align-top'>{actionCell(item)}</td>
+                                <td className='min-w-0 py-3 px-3 sm:px-4 align-top'>
+                                    <AppointmentActionCell
+                                        item={{ ...item, cancelIcon: assets.cancel_icon, tickIcon: assets.tick_icon }}
+                                        btnHistory={btnHistory}
+                                        btnPrescription={btnPrescription}
+                                        btnFollowUp={btnFollowUp}
+                                        onViewHistory={() => setSelectedPatient({ id: item.userId, name: item.userData?.name })}
+                                        onOpenPrescription={() => { setSelectedAppointment(item); setShowPrescriptionForm(true); }}
+                                        onOpenFollowUp={() => setAppointmentForFollowUp(item)}
+                                        onCancel={() => dispatch(cancelDoctorAppointment(item._id))}
+                                        onComplete={() => dispatch(completeAppointment(item._id))}
+                                        onJoinVideo={() => dispatch(joinDoctorVideoConsultation(item._id))}
+                                        onStartVideo={() => dispatch(startVideoConsultation(item._id))}
+                                        onEndVideo={() => dispatch(endVideoConsultation(item._id))}
+                                    />
+                                </td>
                             </tr>
                         ))}
                     </tbody>

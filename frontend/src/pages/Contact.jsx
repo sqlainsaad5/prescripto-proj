@@ -1,37 +1,77 @@
 import React, { useState } from "react";
-import { assets } from "../assets/assets";
+import { toast } from "react-toastify";
+import { assets } from "../data/assets";
 import { useDispatch } from "react-redux";
 import { contactUs } from "../store/slices/userSlice";
+import { validateContactForm } from "../utils/validation/contactSchema";
+
+const emptyForm = {
+  name: "",
+  email: "",
+  subject: "",
+  message: "",
+};
 
 const Contact = () => {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    subject: "",
-    message: "",
-  });
-
+  const [formData, setFormData] = useState(emptyForm);
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const onChangeHandler = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const nextValue =
+      name === "name" ? value.replace(/\d/g, "") : value;
+    setFormData((prev) => ({ ...prev, [name]: nextValue }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
   };
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    setFieldErrors({});
+
+    const client = validateContactForm(formData);
+    if (!client.isValid) {
+      setFieldErrors(client.fieldErrors);
+      const first = Object.values(client.fieldErrors)[0];
+      if (first) {
+        toast.error(first);
+      }
+      return;
+    }
+
     setLoading(true);
-    await dispatch(contactUs(formData));
+    const result = await dispatch(contactUs(formData));
     setLoading(false);
-    setFormData({ name: "", email: "", subject: "", message: "" });
+
+    if (contactUs.fulfilled.match(result)) {
+      setFormData(emptyForm);
+      setFieldErrors({});
+    } else if (contactUs.rejected.match(result)) {
+      const payload = result.payload;
+      if (payload?.fieldErrors && Object.keys(payload.fieldErrors).length > 0) {
+        setFieldErrors(payload.fieldErrors);
+      }
+    }
   };
+
+  const inputErrorClass = (name) =>
+    fieldErrors[name]
+      ? "border-red-500 focus:border-red-600"
+      : "border-gray-300 focus:border-black";
 
   return (
     <>
       <div className="text-center text-2xl pt-10 text-gray-500">
-        <p>
+        <h1>
           CONTACT <span className="text-gray-700 font-semibold">US</span>
-        </p>
+        </h1>
       </div>
 
       <div className="my-10 flex flex-col justify-center md:flex-row gap-10 mb-28 text-sm">
@@ -43,7 +83,7 @@ const Contact = () => {
             alt="Contact"
           />
           <div className="flex flex-col justify-center items-start gap-6">
-            <p className="font-semibold text-lg text-gray-600">OUR OFFICE</p>
+            <h2 className="font-semibold text-lg text-gray-600">OUR OFFICE</h2>
             <p className="text-gray-500">
               00000 Willms Station
               <br /> Suite 000, Washington, USA
@@ -52,13 +92,16 @@ const Contact = () => {
               Tel: (000) 000-0000 <br />
               Email: saadamjad558@gmail.com
             </p>
-            <p className="font-semibold text-lg text-gray-600">
+            <h2 className="font-semibold text-lg text-gray-600">
               CAREERS AT PRESCRIPTO
-            </p>
+            </h2>
             <p className="text-gray-500">
               Learn more about our teams and job openings.
             </p>
-            <button className="border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500">
+            <button
+              type="button"
+              className="border border-black px-8 py-4 text-sm hover:bg-black hover:text-white transition-all duration-500"
+            >
               Explore Jobs
             </button>
           </div>
@@ -66,54 +109,94 @@ const Contact = () => {
 
         {/* Contact Form Section */}
         <div className="w-full md:max-w-[600px] border p-8 bg-white rounded-sm">
-          <p className="font-semibold text-lg text-gray-600 mb-6 uppercase tracking-wider">Send a Message</p>
-          <form onSubmit={onSubmitHandler} className="flex flex-col gap-5">
+          <h2 className="font-semibold text-lg text-gray-600 mb-6 uppercase tracking-wider">
+            Send a Message
+          </h2>
+          <form onSubmit={onSubmitHandler} className="flex flex-col gap-5" noValidate>
             <div className="flex flex-col gap-1">
-              <label className="text-gray-500 font-medium font-medium">Full Name</label>
+              <label htmlFor="contact-name" className="text-gray-500 font-medium">
+                Full Name
+              </label>
               <input
-                required
+                id="contact-name"
                 name="name"
                 onChange={onChangeHandler}
                 value={formData.name}
-                className="border border-gray-300 rounded-sm px-4 py-2.5 outline-none focus:border-black transition-all text-gray-700"
+                className={`border rounded-sm px-4 py-2.5 outline-none transition-all text-gray-700 ${inputErrorClass(
+                  "name"
+                )}`}
                 type="text"
                 placeholder="Enter your name"
+                autoComplete="name"
               />
+              {fieldErrors.name && (
+                <p className="text-red-600 text-xs mt-0.5" role="alert">
+                  {fieldErrors.name}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-gray-500 font-medium">Email Address</label>
+              <label htmlFor="contact-email" className="text-gray-500 font-medium">
+                Email Address
+              </label>
               <input
-                required
+                id="contact-email"
                 name="email"
                 onChange={onChangeHandler}
                 value={formData.email}
-                className="border border-gray-300 rounded-sm px-4 py-2.5 outline-none focus:border-black transition-all text-gray-700"
+                className={`border rounded-sm px-4 py-2.5 outline-none transition-all text-gray-700 ${inputErrorClass(
+                  "email"
+                )}`}
                 type="email"
                 placeholder="Enter your email"
+                autoComplete="email"
               />
+              {fieldErrors.email && (
+                <p className="text-red-600 text-xs mt-0.5" role="alert">
+                  {fieldErrors.email}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-gray-500 font-medium">Subject</label>
+              <label htmlFor="contact-subject" className="text-gray-500 font-medium">
+                Subject
+              </label>
               <input
-                required
+                id="contact-subject"
                 name="subject"
                 onChange={onChangeHandler}
                 value={formData.subject}
-                className="border border-gray-300 rounded-sm px-4 py-2.5 outline-none focus:border-black transition-all text-gray-700"
+                className={`border rounded-sm px-4 py-2.5 outline-none transition-all text-gray-700 ${inputErrorClass(
+                  "subject"
+                )}`}
                 type="text"
                 placeholder="What is this regarding?"
               />
+              {fieldErrors.subject && (
+                <p className="text-red-600 text-xs mt-0.5" role="alert">
+                  {fieldErrors.subject}
+                </p>
+              )}
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-gray-500 font-medium">Message</label>
+              <label htmlFor="contact-message" className="text-gray-500 font-medium">
+                Message
+              </label>
               <textarea
-                required
+                id="contact-message"
                 name="message"
                 onChange={onChangeHandler}
                 value={formData.message}
-                className="border border-gray-300 rounded-sm px-4 py-2.5 outline-none focus:border-black transition-all text-gray-700 min-h-[150px] resize-none"
+                className={`border rounded-sm px-4 py-2.5 outline-none transition-all text-gray-700 min-h-[150px] resize-none ${inputErrorClass(
+                  "message"
+                )}`}
                 placeholder="How can we help you?"
-              ></textarea>
+              />
+              {fieldErrors.message && (
+                <p className="text-red-600 text-xs mt-0.5" role="alert">
+                  {fieldErrors.message}
+                </p>
+              )}
             </div>
             <button
               disabled={loading}

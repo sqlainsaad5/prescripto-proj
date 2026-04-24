@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { getAllDoctors, changeAvailability } from '../../store/slices/adminSlice'
+import { getAllDoctors, changeAvailability } from '../../redux/slices/adminSlice'
 
 const DoctorsList = () => {
   const { doctors, aToken } = useSelector((state) => state.admin)
@@ -21,11 +21,11 @@ const DoctorsList = () => {
             <div className='border border-indigo-200 rounded-xl max-w-56 overflow-hidden cursor-pointer group' key={index}>
               <img className='bg-indigo-50 group-hover:bg-primary transition-all duration-500' src={item.image} alt="" />
               <div className='p-4'>
-                <p className='text-neutral-800 text-lg-font-medium'>{item.name}</p>
-                <p className='text-zinc-600 text-sm'>{item.speciality}</p>
+                <h2 className='text-neutral-800 text-lg-font-medium'>{item.name}</h2>
+                <span className='text-zinc-600 text-sm'>{item.speciality}</span>
                 <div className='mt-2 flex items-center gap-1 text-sm'>
                   <input onChange={() => dispatch(changeAvailability(item._id))} type="checkbox" checked={item.available} />
-                  <p>Available</p>
+                  <span>Available</span>
                 </div>
               </div>
             </div>

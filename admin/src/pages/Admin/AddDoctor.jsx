@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { assets } from "../../assets/assets";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
-import { addDoctor } from "../../store/slices/adminSlice";
+import { addDoctor } from "../../redux/slices/adminSlice";
+import DoctorImageUpload from "../../components/doctor/DoctorImageUpload";
 
 const AddDoctor = () => {
   const [docImg, setDocImg] = useState(false);
@@ -62,33 +62,17 @@ const AddDoctor = () => {
 
   return (
     <form onSubmit={onSubmitHandler} className="m-5 w-full">
-      <p className="mb-3 text-lg font-medium">Add Doctor</p>
+      <h2 className="mb-3 text-lg font-medium">Add Doctor</h2>
 
       <div className="bg-white px-8 py-8 border rounded w-full max-h-[80vh] overflow-y-scroll border-gray-300">
-        <div className="flex items-center gap-4 mb-8 text-gray-500">
-          <label htmlFor="doc-img">
-            <img
-              className="w-16 bg-gray-100 rounded-full cursor-pointer"
-              src={docImg ? URL.createObjectURL(docImg) : assets.upload_area}
-              alt=""
-            />
-          </label>
-          <input
-            onChange={(e) => setDocImg(e.target.files[0])}
-            type="file"
-            id="doc-img"
-            hidden
-          />
-          <p>
-            Upload doctor <br /> picture
-          </p>
-        </div>
+        <DoctorImageUpload docImg={docImg} setDocImg={setDocImg} />
 
         <div className="flex flex-col lg:flex-row items-start gap-10 text-gray-600">
           <div className="w-full lg:flex-1 flex flex-col gap-4">
             <div className="flex-1 flex flex-col gap-1">
-              <p>Doctor Name</p>
+              <label htmlFor="doctor-name">Doctor Name</label>
               <input
+                id="doctor-name"
                 onChange={(e) => setName(e.target.value)}
                 value={name}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -99,8 +83,9 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>Doctor Email</p>
+              <label htmlFor="doctor-email">Doctor Email</label>
               <input
+                id="doctor-email"
                 onChange={(e) => setEmail(e.target.value)}
                 value={email}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -111,8 +96,9 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>Doctor Password</p>
+              <label htmlFor="doctor-password">Doctor Password</label>
               <input
+                id="doctor-password"
                 onChange={(e) => setPassword(e.target.value)}
                 value={password}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -123,13 +109,13 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>Experience</p>
+              <label htmlFor="doctor-experience">Experience</label>
               <select
+                id="doctor-experience"
                 onChange={(e) => setExperience(e.target.value)}
                 value={experience}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
                 name=""
-                id=""
               >
                 <option value="1 year">1 Year</option>
                 <option value="2 year">2 Year</option>
@@ -145,8 +131,9 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>fee</p>
+              <label htmlFor="doctor-fee">fee</label>
               <input
+                id="doctor-fee"
                 onChange={(e) => setfee(e.target.value)}
                 value={fee}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -158,13 +145,13 @@ const AddDoctor = () => {
           </div>
           <div className="w-full lg:flex-1 flex flex-col gap-4">
             <div className="flex-1 flex flex-col gap-1">
-              <p>Speciality</p>
+              <label htmlFor="doctor-speciality">Speciality</label>
               <select
+                id="doctor-speciality"
                 onChange={(e) => setSpeciality(e.target.value)}
                 value={speciality}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
                 name="name"
-                id=""
               >
                 <option value="General physician">General physician</option>
                 <option value="Gynecologist">Gynecologist</option>
@@ -176,8 +163,9 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>Education</p>
+              <label htmlFor="doctor-education">Education</label>
               <input
+                id="doctor-education"
                 onChange={(e) => setDegree(e.target.value)}
                 value={degree}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -188,8 +176,9 @@ const AddDoctor = () => {
             </div>
 
             <div className="flex-1 flex flex-col gap-1">
-              <p>Address</p>
+              <label htmlFor="doctor-address1">Address</label>
               <input
+                id="doctor-address1"
                 onChange={(e) => setAddress1(e.target.value)}
                 value={address1}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -198,6 +187,7 @@ const AddDoctor = () => {
                 required
               />
               <input
+                id="doctor-address2"
                 onChange={(e) => setAddress2(e.target.value)}
                 value={address2}
                 className="border border-gray-300 rounded px-3 py-2 text-gray-700"
@@ -209,8 +199,9 @@ const AddDoctor = () => {
           </div>
         </div>
         <div>
-          <p className="mt-4 mb-2">About Doctor</p>
+          <label htmlFor="doctor-about" className="mt-4 mb-2 block">About Doctor</label>
           <textarea
+            id="doctor-about"
             onChange={(e) => setAbout(e.target.value)}
             value={about}
             className="w-full px-4 pt-2 border border-gray-300 rounded"
